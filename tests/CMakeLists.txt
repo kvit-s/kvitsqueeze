@@ -54,6 +54,16 @@ sqz_add_test(ExternalEngineTests test_externalengine.cpp unit)
 # this is what turns a missing resources.qrc entry into a red test.
 sqz_add_test(ShellTests test_shell.cpp shell)
 
+# ── The one interaction that is worth real mouse events.
+#
+# ShellTests proves every view loads; it cannot prove a control does anything.
+# prd.md FR-5.2's seek shipped broken twice, both times from a wrong reading of
+# how a Slider delivers a release, and both times invisible to a suite that
+# only instantiates. This one drags the real SeekBar and reads what came out.
+sqz_add_test(SeekBarTests test_seekbar.cpp shell)
+target_sources(SeekBarTests PRIVATE ${CMAKE_SOURCE_DIR}/resources.qrc)
+target_link_libraries(SeekBarTests PRIVATE Qt6::QuickControls2 Qt6::Quick)
+
 # The .qml files live in resources.qrc, which is compiled into whichever
 # binary lists it — and that is normally only the application. Without this
 # the test binary has no qrc:/qml/Main.qml at all and would report the shell

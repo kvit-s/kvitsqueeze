@@ -67,6 +67,20 @@ public:
     // worse than reporting nothing.
     static bool applyLogLine(const QString &line, EngineStatus *status);
 
+    // What actually reaches `-o`, as a pure function of the three inputs, so
+    // the rule has cases instead of a comment.
+    //
+    // A device the user picked always wins. "System default" — an empty
+    // setting — resolves to `systemDefault`, because the engine's own idea of a
+    // default is the first MME device and not the one Windows would use. It
+    // resolves to nothing at all when that name is not among the devices the
+    // engine enumerated: a name the engine cannot open is worse than letting it
+    // choose, and prd.md FR-2.3 persists devices by name precisely so a missing
+    // one is noticed rather than silently repointed.
+    static QString resolveOutputDevice(const QString &configured,
+                                       const QString &systemDefault,
+                                       const QList<AudioDevice> &known);
+
 private:
     void handleStandardError();
     void setState(EngineStatus::State state, const QString &error = {});
@@ -85,6 +99,13 @@ private:
     int m_restartBackoffMs = 1000;
     int m_consecutiveFailures = 0;
     bool m_stopRequested = false;
+
+    // Set when the child refuses to open the resolved system default, so the
+    // restart that its exit triggers falls back to the engine's own default
+    // instead of failing the same way five times. Cleared by start(), so a
+    // settings change or a re-enumeration tries again.
+    bool m_systemDefaultRejected = false;
+    bool m_launchedWithSystemDefault = false;
 
     // Windows Job Object with KILL_ON_JOB_CLOSE (prd.md §7.3.2). Held as a
     // void* so this header names no Windows type; the app must never leave a

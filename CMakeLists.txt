@@ -132,10 +132,17 @@ endif()
 # one, which would trade a two-line dependency for a hole in FR-6.1.
 add_library(sqz-engine ${SQZ_LIB_TYPE}
     src/engine/externalengine.cpp
+    src/engine/systemaudio.cpp
     src/engine/iaudioengine.h
 )
 target_link_libraries(sqz-engine PUBLIC sqz-protocol Qt6::Core)
 target_include_directories(sqz-engine PUBLIC src/engine)
+if(WIN32)
+    # systemaudio.cpp asks Windows which endpoint is the default one, so that
+    # "System default" in the settings screen means the device Windows would
+    # use rather than whichever one the engine's own default lands on.
+    target_link_libraries(sqz-engine PRIVATE ole32)
+endif()
 
 # ── sqz-app — orchestration and the QML-facing models.
 add_library(sqz-app ${SQZ_LIB_TYPE}

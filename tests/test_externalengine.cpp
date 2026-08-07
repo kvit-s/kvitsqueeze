@@ -30,6 +30,12 @@ private slots:
     void deviceIdIsTheNameNotTheIndex();
     void ignoresTheHeadingAndBlankLines();
 
+    void aChosenDeviceBeatsTheSystemDefault();
+    void anEmptySettingResolvesToTheSystemDefault();
+    void theSystemDefaultIsTrustedBeforeAnythingIsEnumerated();
+    void aSystemDefaultThatIsNotThereResolvesToNothing();
+    void aResolvedDeviceIsTheOnlyThingThatPutsDashOOnTheCommandLine();
+
     void connectedMovesTheStateToRunning();
     void readsTheDecoderFromCodecOpen();
     void anUnknownCodecLetterLeavesTheDecoderAlone();
@@ -37,6 +43,9 @@ private slots:
     void readsTheOutputDeviceAndRateFromOpenedDevice();
     void underrunsStayUnknownUntilOneHappens();
     void anUnrelatedLineChangesNothing();
+    void aDeviceThatWillNotOpenAtTheTracksRateIsSaidOutLoud();
+    void aRepeatedOpenFailureIsOnlyWorthPublishingOnce();
+    void openingTheDeviceClearsTheComplaint();
 
 private:
     static EngineConfig baseConfig()
@@ -156,6 +165,76 @@ void TestExternalEngine::ignoresTheHeadingAndBlankLines()
     QVERIFY(ExternalEngine::parseDeviceList(QString()).isEmpty());
 }
 
+// resolveOutputDevice() is why the app makes a sound. Started with no -o,
+// squeezelite opens PortAudio's default, which is the first MME device — on
+// this machine "LG TV SSCR2 (NVIDIA High Defini [MME]", a television that is
+// usually off. The server streams, the position advances, and nothing is
+// audible. These cases pin the rule that replaced it.
+namespace {
+
+QList<AudioDevice> enumeratedDevices()
+{
+    // Verbatim `squeezelite -l`, trimmed to the lines that matter: the same
+    // endpoint appears under three host APIs, and only one of them is the one
+    // prd.md FR-2.4 wants.
+    return ExternalEngine::parseDeviceList(QStringLiteral(
+        "Output devices:\n"
+        "  3 - LG TV SSCR2 (NVIDIA High Defini [MME]\n"
+        "  9 - Realtek Digital Output (Realtek(R) Audio) [Windows DirectSound]\n"
+        "  11 - Realtek Digital Output (Realtek(R) Audio) [Windows WASAPI]\n"));
+}
+
+const QString kSystemDefault =
+    QStringLiteral("Realtek Digital Output (Realtek(R) Audio) [Windows WASAPI]");
+
+} // namespace
+
+void TestExternalEngine::aChosenDeviceBeatsTheSystemDefault()
+{
+    // prd.md FR-2.3: the user's choice is persisted by name and is not
+    // second-guessed, including when Windows disagrees about the default.
+    const QString chosen =
+        QStringLiteral("LG TV SSCR2 (NVIDIA High Definition Audio) [Windows WASAPI]");
+    QCOMPARE(ExternalEngine::resolveOutputDevice(chosen, kSystemDefault, enumeratedDevices()),
+             chosen);
+}
+
+void TestExternalEngine::anEmptySettingResolvesToTheSystemDefault()
+{
+    QCOMPARE(ExternalEngine::resolveOutputDevice({}, kSystemDefault, enumeratedDevices()),
+             kSystemDefault);
+}
+
+void TestExternalEngine::theSystemDefaultIsTrustedBeforeAnythingIsEnumerated()
+{
+    // Enumeration is a second child process; on the first launch it has not
+    // finished. Waiting for it would delay every start, and the cost of being
+    // wrong is one restart — the cost of falling back is silence.
+    QCOMPARE(ExternalEngine::resolveOutputDevice({}, kSystemDefault, {}), kSystemDefault);
+}
+
+void TestExternalEngine::aSystemDefaultThatIsNotThereResolvesToNothing()
+{
+    // A name the engine would refuse. Better to let it pick than to hand it
+    // one it will exit over — and with nothing to resolve, nothing is claimed.
+    const QString absent = QStringLiteral("Headphones (Some USB DAC) [Windows WASAPI]");
+    QVERIFY(ExternalEngine::resolveOutputDevice({}, absent, enumeratedDevices()).isEmpty());
+    QVERIFY(ExternalEngine::resolveOutputDevice({}, {}, enumeratedDevices()).isEmpty());
+}
+
+void TestExternalEngine::aResolvedDeviceIsTheOnlyThingThatPutsDashOOnTheCommandLine()
+{
+    QVERIFY(!ExternalEngine::buildArguments(baseConfig()).contains(QStringLiteral("-o")));
+
+    EngineConfig config = baseConfig();
+    config.outputDevice = kSystemDefault;
+    const QStringList args = ExternalEngine::buildArguments(config);
+
+    // The host-API suffix is part of the name squeezelite matches. Without it
+    // the same endpoint matches DirectSound first, at ten times the latency.
+    QCOMPARE(args.value(args.indexOf("-o") + 1), kSystemDefault);
+}
+
 void TestExternalEngine::connectedMovesTheStateToRunning()
 {
     EngineStatus status;
@@ -243,6 +322,58 @@ void TestExternalEngine::anUnrelatedLineChangesNothing()
     QVERIFY(status.decoder.isEmpty());
     QCOMPARE(status.sourceSampleRate, -1);
     QCOMPARE(status.outputSampleRate, -1);
+}
+
+// Captured from the shipped engine pointed at an HDMI endpoint that reports
+// "supported rates: 48000" and nothing else, playing a 44.1 kHz MP3. It
+// repeated 1,400 times in twelve seconds. Nothing else in the app can tell
+// this apart from playing: the server streams, the transport says play, the
+// position advances, and there is no sound.
+static const QString kOpenFailure = QStringLiteral(
+    "[12:27:25.806] _pa_open:396 error opening device 10 - "
+    "LG TV SSCR2 (NVIDIA High Definition Audio) [Windows WASAPI] : Invalid sample rate");
+
+void TestExternalEngine::aDeviceThatWillNotOpenAtTheTracksRateIsSaidOutLoud()
+{
+    EngineStatus status;
+    QVERIFY(ExternalEngine::applyLogLine(
+        QStringLiteral("[12:27:25.799] _output_frames:153 track start sample rate: 44100"),
+        &status));
+
+    QVERIFY(ExternalEngine::applyLogLine(kOpenFailure, &status));
+    QVERIFY(status.lastError.contains(QStringLiteral("44100")));
+    QVERIFY(status.lastError.contains(QStringLiteral("Invalid sample rate")));
+
+    // The process is alive and still connected — what failed is the output.
+    // Calling it Failed would have the UI offer to restart an engine that is
+    // running fine.
+    QCOMPARE(status.state, EngineStatus::State::Stopped);
+}
+
+void TestExternalEngine::aRepeatedOpenFailureIsOnlyWorthPublishingOnce()
+{
+    EngineStatus status;
+    QVERIFY(ExternalEngine::applyLogLine(kOpenFailure, &status));
+    QVERIFY(!status.lastError.isEmpty());
+
+    // 1,400 status publishes in twelve seconds is not a diagnostic, it is a
+    // repaint storm.
+    QVERIFY(!ExternalEngine::applyLogLine(kOpenFailure, &status));
+    QVERIFY(!ExternalEngine::applyLogLine(kOpenFailure, &status));
+}
+
+void TestExternalEngine::openingTheDeviceClearsTheComplaint()
+{
+    EngineStatus status;
+    QVERIFY(ExternalEngine::applyLogLine(kOpenFailure, &status));
+    QVERIFY(!status.lastError.isEmpty());
+
+    QVERIFY(ExternalEngine::applyLogLine(
+        QStringLiteral("[12:29:08.632] _pa_open:410 opened device 10 - "
+                       "LG TV SSCR2 (NVIDIA High Definition Audio) "
+                       "[Windows WASAPI] at 48000 latency 22 ms"),
+        &status));
+    QVERIFY(status.lastError.isEmpty());
 }
 
 QTEST_APPLESS_MAIN(TestExternalEngine)

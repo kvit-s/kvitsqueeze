@@ -140,7 +140,21 @@ int Settings::outputLatencyMs() const
 
 int Settings::resampleQuality() const
 {
-    return m_settings.value(QLatin1String(kResample), 0).toInt();
+    // Balanced, not Off — and this default is the direct consequence of
+    // prd.md FR-2.4 making shared mode the product decision.
+    //
+    // A WASAPI endpoint in shared mode accepts exactly one rate: whatever the
+    // Windows mixer is running at. This machine's HDMI output reports
+    // "supported rates: 48000" and nothing else, so with resampling off every
+    // 44.1 kHz track — most of a library — fails to open the device and the
+    // engine spins on "Invalid sample rate" while the server happily streams.
+    // Silence, with a transport that looks like it is working.
+    //
+    // Every preset carries the E suffix (see resampleRecipe): resample *only*
+    // when the device cannot take the native rate. So this costs nothing on a
+    // device that can, and is the difference between sound and no sound on one
+    // that cannot. Off remains selectable for a device with a real range.
+    return m_settings.value(QLatin1String(kResample), 2).toInt();
 }
 
 void Settings::setPlayerName(const QString &name)
@@ -205,7 +219,11 @@ bool Settings::albumGridView() const
 
 bool Settings::closeToTray() const
 {
-    return m_settings.value(QLatin1String(kCloseToTray), true).toBool();
+    // Off by default: closing the window ends the app. prd.md FR-7.1 calls
+    // close-to-tray an *option*, and an app that keeps running invisibly after
+    // being closed is a surprise the first time it happens. FR-1.7's
+    // background mode is what the option is for, and it stays one toggle away.
+    return m_settings.value(QLatin1String(kCloseToTray), false).toBool();
 }
 
 bool Settings::startMinimized() const

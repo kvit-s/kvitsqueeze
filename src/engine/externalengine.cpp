@@ -1,6 +1,7 @@
 #include "externalengine.h"
 
 #include "playeridentity.h"
+#include "systemaudio.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -229,6 +230,30 @@ QList<AudioDevice> ExternalEngine::parseDeviceList(const QString &output)
     return devices;
 }
 
+QString ExternalEngine::resolveOutputDevice(const QString &configured,
+                                            const QString &systemDefault,
+                                            const QList<AudioDevice> &known)
+{
+    if (!configured.isEmpty())
+        return configured;
+    if (systemDefault.isEmpty())
+        return {};
+
+    // The list is empty on the first launch — enumeration is a second child
+    // process and it has not finished yet. Trusting the name then is the right
+    // trade: a name the engine cannot open makes it exit with a message, which
+    // handleStandardError() turns into one fallback rather than a silent
+    // stream into a device nobody is listening to.
+    if (known.isEmpty())
+        return systemDefault;
+
+    for (const AudioDevice &device : known) {
+        if (device.id == systemDefault)
+            return systemDefault;
+    }
+    return {};
+}
+
 bool ExternalEngine::applyLogLine(const QString &line, EngineStatus *status)
 {
     if (!status)
@@ -246,6 +271,8 @@ bool ExternalEngine::applyLogLine(const QString &line, EngineStatus *status)
         QStringLiteral(R"(opened device \S+ - (.+) \[.*\] at (\d+) latency)"));
     static const QRegularExpression outputRate(
         QStringLiteral(R"(output_\w*:\d+ sample rate: (\d+))"));
+    static const QRegularExpression openFailed(
+        QStringLiteral(R"(error opening device \S+ - .+ : (.+)$)"));
 
     QRegularExpressionMatch match;
 
@@ -278,6 +305,32 @@ bool ExternalEngine::applyLogLine(const QString &line, EngineStatus *status)
     if ((match = opened.match(line)).hasMatch()) {
         status->outputDevice = match.captured(1).trimmed();
         status->outputSampleRate = match.captured(2).toInt();
+        status->lastError.clear();
+        return true;
+    }
+
+    // The failure that looks most like success. A shared-mode WASAPI endpoint
+    // takes exactly one rate — the Windows mixer's — and a track at any other
+    // rate makes the engine reopen the device fifty times a second, forever,
+    // while the server streams and the position advances. Nothing else in the
+    // app can tell that apart from playing, so this line is the only place the
+    // truth exists. The process is alive, so the state is left alone: what is
+    // broken is the output, not the engine.
+    if ((match = openFailed.match(line)).hasMatch()) {
+        const QString reason = match.captured(1).trimmed();
+        const QString message =
+            status->sourceSampleRate > 0
+                ? tr("The output device would not open at %1 Hz (%2). "
+                     "Resampling, in Settings, converts to a rate it accepts.")
+                      .arg(status->sourceSampleRate)
+                      .arg(reason)
+                : tr("The output device would not open (%1).").arg(reason);
+
+        // It repeats for as long as the track lasts; publishing it once is
+        // enough and republishing it would churn the UI at the same rate.
+        if (status->lastError == message)
+            return false;
+        status->lastError = message;
         return true;
     }
 
@@ -312,6 +365,9 @@ bool ExternalEngine::start(const EngineConfig &config)
 
     m_consecutiveFailures = 0;
     m_restartBackoffMs = kRestartBackoffStartMs;
+    // Whatever made the system default unopenable last time — a device that
+    // was asleep, a role that has since changed — this is a fresh decision.
+    m_systemDefaultRejected = false;
     return launch();
 }
 
@@ -359,7 +415,18 @@ bool ExternalEngine::launch()
         });
 #endif
 
-    m_process->start(m_executable, buildArguments(m_config));
+    // The config is not modified: an empty outputDevice means "System default"
+    // and has to stay that way in settings, or a one-off resolution would be
+    // written back as a fixed choice the user never made.
+    EngineConfig launchConfig = m_config;
+    launchConfig.outputDevice = resolveOutputDevice(
+        m_config.outputDevice,
+        m_systemDefaultRejected ? QString() : systemDefaultOutputDevice(),
+        m_devices);
+    m_launchedWithSystemDefault =
+        m_config.outputDevice.isEmpty() && !launchConfig.outputDevice.isEmpty();
+
+    m_process->start(m_executable, buildArguments(launchConfig));
     if (!m_process->waitForStarted(5000))
         return false;
 
@@ -473,6 +540,16 @@ void ExternalEngine::handleStandardError()
         Q_EMIT logLine(text);
         if (applyLogLine(text, &m_status))
             changed = true;
+
+        // Not part of applyLogLine(): that folds a line into a status, and this
+        // decides what the next launch does. The child exits after printing
+        // this, so the restart the exit triggers is the one that falls back.
+        // Only the resolved default is retracted this way — a device the user
+        // chose stays chosen, and stays loud about not being there.
+        if (m_launchedWithSystemDefault
+            && text.contains(QLatin1String("unable to open output device"))) {
+            m_systemDefaultRejected = true;
+        }
     }
 
     if (changed) {

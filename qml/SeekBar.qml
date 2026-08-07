@@ -21,15 +21,34 @@ Slider {
     enabled: app.player.seekable
     live: false
 
-    // Suspended while dragging: see above.
-    value: seeking ? value : Math.max(0, app.player.elapsed)
+    // The position arrives as a signal rather than a binding, and the binding
+    // it replaces was `value: seeking ? value : elapsed` — self-referential,
+    // which is a binding loop dressed up as a guard.
+    Connections {
+        target: app.player
+        function onPositionChanged() {
+            if (!root.seeking)
+                root.value = Math.max(0, app.player.elapsed)
+        }
+    }
 
+    // `position` rather than `value`, and this is the whole bug that made
+    // dragging do nothing. Measured against the real control (SeekBarTests):
+    //
+    //   press at 120 s → position 0.601, value 0
+    //   drag to 150 s  → moved() emitted on every step, value still 0
+    //   release        → value finally becomes 151.6
+    //
+    // With live:false `value` is written *after* the interaction, so both
+    // obvious spellings send the position the handle started from: a seek to
+    // where the track already was, indistinguishable from being ignored.
+    // `position` is correct from the press onwards, and valueAt() converts it.
     onPressedChanged: {
         if (pressed) {
             seeking = true
         } else {
             seeking = false
-            app.player.seek(value)
+            app.player.seek(valueAt(position))
         }
     }
 
