@@ -1,0 +1,60 @@
+# Local credentials. Keep shareable templates under an .example name.
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+.netrc
+
+# Build
+build/
+# Preset build trees (CMakePresets.json binaryDir pattern)
+build-*/
+# CTest scratch left by in-source ctest runs
+Testing/
+tools/__pycache__/
+
+# Windows helper output
+win-test-result.txt
+windeploy.log
+
+# The audio engine binary is fetched, not committed: it is upstream
+# squeezelite, pinned by version and checksum in packaging/engine-version.txt
+# and staged into engine/ at deploy time.
+#
+# Anchored with a leading slash. Unanchored, `engine/` matches at any depth
+# and silently swallows src/engine/ — the whole audio-engine module.
+/engine/
+packaging/windows/squeezelite.exe
+
+# Qt Creator
+*.pro.user
+*.autosave
+CMakeLists.txt.user
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Compiled
+*.o
+*.a
+*.so
+moc_*
+qrc_*
+*_autogen/
+
+# OS
+.DS_Store
+Thumbs.db
+.clauding
+
+# Packaging outputs
+dist/

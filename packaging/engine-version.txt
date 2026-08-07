@@ -1,0 +1,11 @@
+# The squeezelite build SqeezeAmp ships as its audio engine.
+#
+# Pinned rather than "whatever was current": the log format this app scrapes
+# for engine status is not a stable interface (prd.md §7.3.4), so an engine
+# upgrade is a deliberate change with a test pass behind it, not a download.
+#
+# Fill in when the binary is first staged, and update both lines together.
+
+version: TBD
+sha256:  TBD
+source:  https://github.com/ralph-irving/squeezelite

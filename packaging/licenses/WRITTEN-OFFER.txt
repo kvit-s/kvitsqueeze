@@ -1,0 +1,16 @@
+PLACEHOLDER — complete before any release.
+
+SqeezeAmp includes squeezelite, licensed under the GNU General Public License
+version 3. The version shipped is recorded in packaging/engine-version.txt.
+
+The corresponding source is available at:
+
+    https://github.com/ralph-irving/squeezelite
+
+<CONTACT> also offers, valid for three years from the date of distribution, to
+supply a complete machine-readable copy of the corresponding source on a
+physical medium for no more than the cost of performing the distribution.
+Requests to: <EMAIL>
+
+TODO before release: fill in the two placeholders above, confirm the shipped
+binary is unmodified upstream, and check the term against GPLv3 §6(b).

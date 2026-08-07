@@ -1,0 +1,8 @@
+PLACEHOLDER — replace with the verbatim GPLv3 text before any release.
+
+Fetch it from https://www.gnu.org/licenses/gpl-3.0.txt, or copy the COPYING
+file from the squeezelite source tree matching the binary in engine/.
+
+This file exists so CMakeLists.txt's licence-payload check has something to
+find during development. Shipping this placeholder would satisfy no
+obligation; prd.md M5 makes replacing it an exit criterion.

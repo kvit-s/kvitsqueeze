@@ -1,0 +1,10 @@
+<!--
+  The only component list. A QML file missing from here breaks the shipped
+  shell and, in a Qt Quick test, hangs the harness until its CTest timeout
+  rather than failing with something readable. Add every new .qml file.
+-->
+<RCC>
+    <qresource prefix="/">
+        <file>qml/Main.qml</file>
+    </qresource>
+</RCC>
