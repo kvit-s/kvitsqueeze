@@ -3,9 +3,29 @@
 # Pinned rather than "whatever was current": the log format this app scrapes
 # for engine status is not a stable interface (prd.md §7.3.4), so an engine
 # upgrade is a deliberate change with a test pass behind it, not a download.
+# tests/test_externalengine.cpp holds captured lines from exactly this build;
+# if they stop matching after an upgrade, that test is the thing that says so.
 #
-# Fill in when the binary is first staged, and update both lines together.
+# The binary itself is not committed (see .gitignore). Put it at
+# packaging\windows\squeezelite.exe, or point SQZ_ENGINE_EXE at it, and
+# win-deploy.bat stages it into engine\ beside the application.
 
-version: TBD
-sha256:  TBD
+version: v1.9.9-1432
+sha256:  1eaedc82174c76ad363b4f70b1a480a2c7f9c66f51fb56f6065bc403f2511ebb
 source:  https://github.com/ralph-irving/squeezelite
+build:   WIN PORTAUDIO WINEVENT RESAMPLE FFMPEG OPUS DSD SSL LINKALL
+
+# Notes on this build, confirmed by running it:
+#
+#  * It is self-contained — PortAudio is linked in, so there is no DLL to ship
+#    alongside it.
+#  * `-a <latency>:<exclusive>` is present, which is what settled prd.md §14
+#    assumption 7 and kept Backend B viable (prd.md §7.3.2).
+#  * Codecs registered at startup: flac, pcm/aif, mp3 (mad), aac (faad),
+#    ogg (vorbis), ops (opus), alac and wma (ffmpeg), dsf/dff (dsd) — which
+#    covers prd.md FR-2.1 in full.
+#
+# Distribution obligation: this binary is GPLv3. Shipping it requires its
+# licence text and a written offer for its source to travel with it, whatever
+# licence SqeezeAmp itself carries (prd.md §11.2). Both are in
+# packaging\licenses\ and CMakeLists.txt fails to configure without them.

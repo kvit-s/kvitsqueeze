@@ -6,5 +6,23 @@
 <RCC>
     <qresource prefix="/">
         <file>qml/Main.qml</file>
+
+        <!-- Shared pieces -->
+        <file>qml/Theme.qml</file>
+        <file>qml/Artwork.qml</file>
+        <file>qml/IconButton.qml</file>
+        <file>qml/SeekBar.qml</file>
+        <file>qml/QueueMenu.qml</file>
+        <file>qml/MiniPlayer.qml</file>
+
+        <!-- Screens -->
+        <file>qml/NowPlayingView.qml</file>
+        <file>qml/BrowseView.qml</file>
+        <file>qml/AlbumView.qml</file>
+        <file>qml/ArtistView.qml</file>
+        <file>qml/QueueView.qml</file>
+        <file>qml/SearchView.qml</file>
+        <file>qml/SettingsView.qml</file>
+        <file>qml/DiagnosticsView.qml</file>
     </qresource>
 </RCC>

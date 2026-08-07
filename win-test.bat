@@ -9,6 +9,9 @@ if not defined VS_CMAKE_DIR set VS_CMAKE_DIR=C:\Program Files\Microsoft Visual S
 set PATH=%QT_ROOT_DIR%\bin;%PATH%
 set CTEST=%VS_CMAKE_DIR%\ctest.exe
 cd /d %~dp0
-"%CTEST%" --test-dir build-windows-msvc-release -C Release -L unit --output-on-failure > win-test-result.txt 2>&1
+rem Both labels: `unit` is the deterministic protocol and engine suite, `shell`
+rem instantiates the real QML tree. Neither touches the network or launches a
+rem player, so both belong in the normal run.
+"%CTEST%" --test-dir build-windows-msvc-release -C Release -L "unit|shell" --output-on-failure > win-test-result.txt 2>&1
 echo suite-exit=%errorlevel% >> win-test-result.txt
 exit /b 0

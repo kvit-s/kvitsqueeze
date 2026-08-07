@@ -12,9 +12,22 @@
 // The engine knows nothing about LMS beyond an address to connect to. It is
 // handed a config, told to start, and reports status back.
 
+#include <QList>
 #include <QObject>
 #include <QString>
 #include <QStringList>
+
+// prd.md FR-2.8. A quality *preset* rather than a filter recipe, because the
+// recipe grammar is one backend's command line and this header may not name
+// one. Off is the default: the Windows mixer already resamples in shared mode
+// and doing it twice is worse than doing it once (prd.md FR-2.4).
+enum class ResampleQuality {
+    Off,
+    Fast,
+    Balanced,
+    High,
+    VeryHigh,
+};
 
 struct EngineConfig
 {
@@ -24,12 +37,18 @@ struct EngineConfig
     // The player's identity on the server. Stable and persisted: the same id
     // across restarts keeps the queue and per-player settings server-side
     // (prd.md FR-1.4).
+    //
+    // Left empty by the caller in normal use — the engine fills it from
+    // PlayerIdentity, because no module between here and the session is
+    // allowed to carry a player id (prd.md FR-6.1). It stays a field so that
+    // argument construction remains a pure function of its input.
     QString playerId;            // MAC-style, e.g. "aa:bb:cc:dd:ee:ff"
     QString playerName;
 
     QString outputDevice;        // empty = the engine's default
     int latencyMs = 0;           // 0 = the engine's default
     bool exclusive = false;      // prd.md FR-2.4 — P2, off by default
+    ResampleQuality resample = ResampleQuality::Off;
 };
 
 // What the engine can say about itself. Fields it cannot determine stay at
@@ -49,6 +68,7 @@ struct EngineStatus
     QString lastError;
 
     QString decoder;             // empty = unknown
+    QString outputDevice;        // what the engine actually opened
     int sourceSampleRate = -1;   // -1 = unknown
     int sourceBitDepth = -1;
     int outputSampleRate = -1;
@@ -65,6 +85,13 @@ struct AudioDevice
 {
     QString id;                  // what goes to the engine's device selector
     QString description;         // what the settings UI shows
+
+    // Comparable so a re-enumeration that found the same devices does not
+    // rebuild the settings combo box and lose the user's place in it.
+    bool operator==(const AudioDevice &other) const
+    {
+        return id == other.id && description == other.description;
+    }
 };
 
 class IAudioEngine : public QObject
@@ -74,6 +101,12 @@ class IAudioEngine : public QObject
 public:
     explicit IAudioEngine(QObject *parent = nullptr) : QObject(parent) {}
     ~IAudioEngine() override = default;
+
+    // Can this backend run at all on this machine? Under Backend B that means
+    // the binary is where it was staged; under an in-process backend it would
+    // be trivially true. Asking lets the UI say "the audio engine is missing"
+    // once, instead of failing at the first attempt to play.
+    virtual bool isAvailable() const = 0;
 
     virtual bool start(const EngineConfig &config) = 0;
     virtual void stop() = 0;
@@ -85,10 +118,17 @@ public:
     virtual bool setOutputDevice(const QString &device) = 0;
 
     virtual QList<AudioDevice> devices() const = 0;
+
+    // Enumeration may cost a process launch or a driver round trip, so it is
+    // an explicit request that answers on devicesChanged() rather than
+    // something devices() does behind a const accessor.
+    virtual void refreshDevices() = 0;
+
     virtual EngineStatus status() const = 0;
 
 Q_SIGNALS:
     void statusChanged(const EngineStatus &status);
+    void devicesChanged();
     void errorOccurred(const QString &message);
 
     // Raw engine output, for the diagnostics panel (prd.md FR-9.2). Not a

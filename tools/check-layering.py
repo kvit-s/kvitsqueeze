@@ -33,9 +33,16 @@ SRC = os.path.join(ROOT, "src")
 # ── The intended graph.
 #
 # A module may include headers from itself and from anything listed here.
+#
+# engine depends on protocol for one type only: PlayerIdentity. The engine
+# still knows nothing about LMS — see the note in CMakeLists.txt — but it does
+# have to know *which player it is*, because it passes that to squeezelite's
+# -m. The session needs the same value for FR-6.1, and the player-id rule below
+# forbids any module that can see both of them from carrying it. So both read
+# it from the same place rather than one handing it to the other.
 DEPENDS = {
     "protocol": set(),
-    "engine": set(),
+    "engine": {"protocol"},
     "session": {"protocol"},
     "app": {"session", "engine", "protocol"},
     "qml": {"app", "session", "engine", "protocol"},

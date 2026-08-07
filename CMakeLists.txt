@@ -83,8 +83,13 @@ endif()
 
 # ── sqz-protocol — the wire format, and nothing else.
 add_library(sqz-protocol ${SQZ_LIB_TYPE}
+    src/protocol/browsereply.cpp
+    src/protocol/clievent.cpp
+    src/protocol/lmscommands.cpp
     src/protocol/lmsrequest.cpp
+    src/protocol/playeridentity.cpp
     src/protocol/playerstatus.cpp
+    src/protocol/serverdiscovery.cpp
 )
 target_link_libraries(sqz-protocol PUBLIC Qt6::Core)
 target_include_directories(sqz-protocol PUBLIC src/protocol)
@@ -96,36 +101,72 @@ target_include_directories(sqz-protocol PUBLIC src/protocol)
 # nothing to open one with. PUBLIC because the session's own headers hold a
 # QNetworkAccessManager.
 add_library(sqz-session ${SQZ_LIB_TYPE}
+    src/session/credentialstore.cpp
+    src/session/lmscliclient.cpp
     src/session/lmssession.cpp
+    src/session/serverbrowser.cpp
 )
 target_link_libraries(sqz-session PUBLIC sqz-protocol Qt6::Network)
 target_include_directories(sqz-session PUBLIC src/session)
 
+if(WIN32)
+    # CredentialStore talks to the Windows Credential Manager directly rather
+    # than through QKeychain: the Windows backend of that library is these
+    # three calls, and prd.md NFR-8 wants a build with no package manifest to
+    # drift (prd.md FR-1.3).
+    target_link_libraries(sqz-session PRIVATE advapi32)
+endif()
+
 # ── sqz-engine — the audio engine behind IAudioEngine.
 #
-# Deliberately depends on no other sqz module. It is configured with a struct
-# (server address, player id, device name) and reports status back; it does
-# not know what LMS is. That is what keeps prd.md §7.3's backend swap a
-# one-class change rather than a refactor.
+# It is configured with a struct (server address, device name) and reports
+# status back; it does not know what LMS is, which is what keeps prd.md §7.3's
+# backend swap a one-class change rather than a refactor.
+#
+# The one thing it takes from sqz-protocol is PlayerIdentity. The engine has to
+# know *which player it is* — that value goes to squeezelite's -m — and so does
+# LmsSession, for FR-6.1. Neither may learn it from the other, because the only
+# modules that can see both are sqz-app and sqz-qml and those are forbidden
+# from touching a player id at all. So both read it from the same place. The
+# alternative was plumbing the id through a module prd.md says must not carry
+# one, which would trade a two-line dependency for a hole in FR-6.1.
 add_library(sqz-engine ${SQZ_LIB_TYPE}
     src/engine/externalengine.cpp
     src/engine/iaudioengine.h
 )
-target_link_libraries(sqz-engine PUBLIC Qt6::Core)
+target_link_libraries(sqz-engine PUBLIC sqz-protocol Qt6::Core)
 target_include_directories(sqz-engine PUBLIC src/engine)
 
 # ── sqz-app — orchestration and the QML-facing models.
 add_library(sqz-app ${SQZ_LIB_TYPE}
+    src/app/applog.cpp
+    src/app/artworkcache.cpp
+    src/app/browsemodel.cpp
+    src/app/diagnosticsmodel.cpp
+    src/app/enginecontroller.cpp
+    src/app/librarycontroller.cpp
+    src/app/playbackcontroller.cpp
     src/app/queuemodel.cpp
+    src/app/searchmodel.cpp
+    src/app/settings.cpp
 )
 target_link_libraries(sqz-app PUBLIC sqz-session sqz-engine)
-target_link_libraries(sqz-app PRIVATE Qt6::Concurrent Qt6::Gui)
+# Gui is PUBLIC because ArtworkCache holds QImages in its public surface;
+# Concurrent is genuinely private, used only to decode off the GUI thread.
+target_link_libraries(sqz-app PUBLIC Qt6::Gui)
+target_link_libraries(sqz-app PRIVATE Qt6::Concurrent)
 target_include_directories(sqz-app PUBLIC src/app)
 
 # ── sqz-qml — the presentation surface and the composition root.
 add_library(sqz-qml ${SQZ_LIB_TYPE}
     src/qml/appcontext.cpp
+    src/qml/appicon.cpp
+    src/qml/artworkimageprovider.cpp
+    src/qml/mediakeys.cpp
+    src/qml/singleinstance.cpp
     src/qml/sqeezeampapplication.cpp
+    src/qml/systemmediacontrols.cpp
+    src/qml/traycontroller.cpp
     src/qml/qmlsingletons.h
 )
 # Quick is PUBLIC because sqeezeampapplication.h holds a QQmlApplicationEngine
@@ -135,6 +176,15 @@ add_library(sqz-qml ${SQZ_LIB_TYPE}
 target_link_libraries(sqz-qml PUBLIC sqz-app Qt6::Quick)
 target_link_libraries(sqz-qml PRIVATE Qt6::QuickControls2 Qt6::Widgets)
 target_include_directories(sqz-qml PUBLIC src/qml)
+
+if(WIN32)
+    # SystemMediaTransportControls is WinRT (prd.md FR-7.5). windowsapp is the
+    # umbrella import library that resolves the activation factory; the header
+    # test in systemmediacontrols.cpp compiles the whole class away when the
+    # C++/WinRT headers are absent, so this is the only place the feature can
+    # affect the build.
+    target_link_libraries(sqz-qml PRIVATE windowsapp)
+endif()
 
 target_compile_definitions(sqz-qml PRIVATE SQZ_VERSION="${SQZ_VERSION_FULL}")
 
@@ -204,6 +254,35 @@ endforeach()
 add_library(sqz-core INTERFACE)
 target_link_libraries(sqz-core INTERFACE sqz-qml)
 
+# ── Keeping the QML type registration alive across the link.
+#
+# qt_add_qml_module generates sqz-qml_qmltyperegistrations.cpp, whose only
+# content is a startup registration for every QML_FOREIGN wrapper in
+# qmlsingletons.h. Nothing in the program *calls* anything in that file, and a
+# static library only contributes the object files whose symbols are
+# referenced — so MSVC discards it and the registration never runs.
+#
+# The failure is unusually quiet, which is why this is worth a paragraph:
+# `import Sqz` still succeeds, because the module's qmldir is a resource and is
+# found. It simply contains no types. Everything that resolves a Sqz type
+# inside a function body — Library.PlayNow in a click handler — then fails at
+# *runtime* with "ReferenceError: Library is not defined", long after the file
+# that would have caught it loaded cleanly.
+#
+# tests/test_shell.cpp evaluates one Sqz type on purpose so this cannot come
+# back silently.
+function(sqz_keep_qml_registration target)
+    if(SQZ_SHARED_LIBS)
+        return() # a shared library keeps its own initializers
+    endif()
+    if(MSVC)
+        target_link_options(${target} PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:sqz-qml>")
+    else()
+        target_link_libraries(${target} PRIVATE
+            -Wl,--whole-archive sqz-qml -Wl,--no-whole-archive)
+    endif()
+endfunction()
+
 qt_add_executable(sqeezeamp
     src/main.cpp
     resources.qrc
@@ -216,6 +295,8 @@ target_link_libraries(sqeezeamp PRIVATE
 )
 # main.cpp reports the version too, and the define on sqz-qml is PRIVATE.
 target_compile_definitions(sqeezeamp PRIVATE SQZ_VERSION="${SQZ_VERSION_FULL}")
+
+sqz_keep_qml_registration(sqeezeamp)
 
 if(WIN32)
     set_target_properties(sqeezeamp PROPERTIES WIN32_EXECUTABLE TRUE)

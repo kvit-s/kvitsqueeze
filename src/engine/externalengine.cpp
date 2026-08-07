@@ -1,11 +1,68 @@
 #include "externalengine.h"
 
+#include "playeridentity.h"
+
 #include <QCoreApplication>
 #include <QDir>
+#include <QFileInfo>
+#include <QRegularExpression>
+#include <QTimer>
+
+#ifdef Q_OS_WIN
+#  include <qt_windows.h>
+#endif
+
+namespace {
+
+// prd.md FR-1.5's shape, applied to the child process: retry, back off, and
+// stop claiming to be starting once it is clearly not going to.
+constexpr int kRestartBackoffStartMs = 1000;
+constexpr int kRestartBackoffCapMs = 30000;
+constexpr int kFailuresBeforeGivingUp = 5;
+
+// squeezelite names its decoders by a single character in the log. This is the
+// mapping upstream's own registration lines print at startup ("using mad to
+// decode mp3"), so an unknown character stays unknown rather than being
+// guessed into a plausible-looking format badge.
+QString decoderName(QChar code)
+{
+    switch (code.unicode()) {
+    case 'f': return QStringLiteral("FLAC");
+    case 'm': return QStringLiteral("MP3");
+    case 'p': return QStringLiteral("PCM");
+    case 'a': return QStringLiteral("AAC");
+    case 'l': return QStringLiteral("ALAC");
+    case 'o': return QStringLiteral("Vorbis");
+    case 'u': return QStringLiteral("Opus");
+    case 'w': return QStringLiteral("WMA");
+    case 'd': return QStringLiteral("DSD");
+    default:  return {};
+    }
+}
+
+QString resampleRecipe(ResampleQuality quality)
+{
+    // (quality)(phase)(exception). L is linear phase; E means "only resample
+    // when the device cannot take the source rate", which is the only
+    // behaviour that makes sense under FR-2.4's shared mode — resampling a
+    // stream the mixer is about to resample again is pure loss.
+    switch (quality) {
+    case ResampleQuality::Off:      return {};
+    case ResampleQuality::Fast:     return QStringLiteral("lLE");
+    case ResampleQuality::Balanced: return QStringLiteral("mLE");
+    case ResampleQuality::High:     return QStringLiteral("hLE");
+    case ResampleQuality::VeryHigh: return QStringLiteral("vLE");
+    }
+    return {};
+}
+
+} // namespace
 
 ExternalEngine::ExternalEngine(QObject *parent)
     : IAudioEngine(parent)
     , m_process(new QProcess(this))
+    , m_enumerator(new QProcess(this))
+    , m_restart(new QTimer(this))
     , m_executable(QDir(QCoreApplication::applicationDirPath())
                        .filePath(QStringLiteral("engine/squeezelite.exe")))
 {
@@ -14,44 +71,87 @@ ExternalEngine::ExternalEngine(QObject *parent)
     // would interleave partial lines from two streams into the log scraper.
     m_process->setProcessChannelMode(QProcess::SeparateChannels);
 
+    m_restart->setSingleShot(true);
+    connect(m_restart, &QTimer::timeout, this, [this] {
+        if (!m_stopRequested)
+            launch();
+    });
+
     connect(m_process, &QProcess::readyReadStandardError,
             this, &ExternalEngine::handleStandardError);
 
     connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
-        if (error == QProcess::FailedToStart) {
-            setState(EngineStatus::State::Failed,
-                     tr("Could not start the audio engine at %1").arg(m_executable));
-        }
+        if (error != QProcess::FailedToStart)
+            return;
+        setState(EngineStatus::State::Failed,
+                 QFileInfo::exists(m_executable)
+                     ? tr("The audio engine at %1 would not start").arg(m_executable)
+                     : tr("No audio engine found at %1").arg(m_executable));
     });
 
     connect(m_process, &QProcess::finished, this,
             [this](int exitCode, QProcess::ExitStatus exitStatus) {
-                if (m_status.state == EngineStatus::State::Stopped)
+                if (m_stopRequested)
                     return; // a stop() we asked for
-                setState(EngineStatus::State::Failed,
-                         tr("The audio engine exited unexpectedly (code %1)")
-                             .arg(exitStatus == QProcess::CrashExit ? -1 : exitCode));
+
+                ++m_consecutiveFailures;
+                const QString reason =
+                    exitStatus == QProcess::CrashExit
+                        ? tr("The audio engine crashed")
+                        : tr("The audio engine exited unexpectedly (code %1)").arg(exitCode);
+
+                if (m_consecutiveFailures >= kFailuresBeforeGivingUp) {
+                    // prd.md §7.3.2 wants repeated failures surfaced rather
+                    // than a restart storm that looks like the app working.
+                    setState(EngineStatus::State::Failed,
+                             tr("%1, and did not recover after %2 attempts")
+                                 .arg(reason)
+                                 .arg(m_consecutiveFailures));
+                    return;
+                }
+
+                setState(EngineStatus::State::Starting, reason);
+                m_restart->start(m_restartBackoffMs);
+                m_restartBackoffMs = qMin(m_restartBackoffMs * 2, kRestartBackoffCapMs);
             });
+
+    connect(m_enumerator, &QProcess::finished, this, [this](int, QProcess::ExitStatus) {
+        const QString output = QString::fromLocal8Bit(m_enumerator->readAllStandardOutput())
+                               + QString::fromLocal8Bit(m_enumerator->readAllStandardError());
+        const QList<AudioDevice> found = parseDeviceList(output);
+        if (found == m_devices)
+            return;
+        m_devices = found;
+        Q_EMIT devicesChanged();
+    });
 }
 
 ExternalEngine::~ExternalEngine()
 {
-    // A child that outlives the app keeps the audio device and stays
-    // registered as a player, so the server shows a ghost. This destructor is
-    // the last line of defence only; the real guarantee is the Windows Job
-    // Object with KILL_ON_JOB_CLOSE that prd.md §7.3.2 requires, which also
-    // covers the app being killed rather than closed. TODO: add the job
-    // object — until then a hard kill of SqeezeAmp orphans the engine.
+    m_stopRequested = true;
     if (m_process->state() != QProcess::NotRunning) {
         m_process->terminate();
         if (!m_process->waitForFinished(2000))
             m_process->kill();
     }
+
+#ifdef Q_OS_WIN
+    // Closing the job handle is what kills anything still inside it, which is
+    // the guarantee the destructor above cannot give when the app is killed
+    // rather than closed.
+    if (m_job)
+        CloseHandle(static_cast<HANDLE>(m_job));
+#endif
 }
 
 void ExternalEngine::setExecutablePath(const QString &path)
 {
     m_executable = path;
+}
+
+bool ExternalEngine::isAvailable() const
+{
+    return QFileInfo::exists(m_executable);
 }
 
 QStringList ExternalEngine::buildArguments(const EngineConfig &config)
@@ -87,15 +187,167 @@ QStringList ExternalEngine::buildArguments(const EngineConfig &config)
         args << QStringLiteral("-a") << audioParams;
     }
 
+    const QString recipe = resampleRecipe(config.resample);
+    if (!recipe.isEmpty())
+        args << QStringLiteral("-R") << recipe;
+
+    // Raised verbosity is not optional under this backend: it is the only
+    // source FR-2.5 has. These four categories cover connection state, the
+    // decoder, and the rates; everything else stays at the default so the
+    // diagnostics panel is readable.
+    args << QStringLiteral("-d") << QStringLiteral("slimproto=info")
+         << QStringLiteral("-d") << QStringLiteral("stream=info")
+         << QStringLiteral("-d") << QStringLiteral("decode=info")
+         << QStringLiteral("-d") << QStringLiteral("output=info");
+
     return args;
+}
+
+QList<AudioDevice> ExternalEngine::parseDeviceList(const QString &output)
+{
+    // "  11 - Realtek Digital Output (Realtek(R) Audio) [Windows WASAPI]"
+    static const QRegularExpression line(
+        QStringLiteral(R"(^\s*(\d+)\s*-\s*(.+?)\s*$)"));
+
+    QList<AudioDevice> devices;
+    const QStringList lines = output.split(QLatin1Char('\n'));
+    for (const QString &raw : lines) {
+        const QRegularExpressionMatch match = line.match(raw);
+        if (!match.hasMatch())
+            continue;
+
+        AudioDevice device;
+        // The *name* is the id, not the index. Indices are assigned in
+        // enumeration order and shuffle when a device is plugged in, so a
+        // persisted index would silently start pointing at the TV
+        // (prd.md FR-2.3: persist by name and re-bind on hot-plug).
+        device.description = match.captured(2).trimmed();
+        device.id = device.description;
+        if (!device.description.isEmpty())
+            devices.append(device);
+    }
+    return devices;
+}
+
+bool ExternalEngine::applyLogLine(const QString &line, EngineStatus *status)
+{
+    if (!status)
+        return false;
+
+    // Every line is "[hh:mm:ss.zzz] function:line message". Only the message
+    // matters, and matching on the function name as well makes each case
+    // specific enough that an unrelated line carrying the same words cannot
+    // move a field.
+    static const QRegularExpression connected(QStringLiteral(R"(slimproto:\d+ connected)"));
+    static const QRegularExpression codec(QStringLiteral(R"(codec open: '(.)')"));
+    static const QRegularExpression trackRate(
+        QStringLiteral(R"(track start sample rate: (\d+))"));
+    static const QRegularExpression opened(
+        QStringLiteral(R"(opened device \S+ - (.+) \[.*\] at (\d+) latency)"));
+    static const QRegularExpression outputRate(
+        QStringLiteral(R"(output_\w*:\d+ sample rate: (\d+))"));
+
+    QRegularExpressionMatch match;
+
+    if (connected.match(line).hasMatch()) {
+        if (status->state == EngineStatus::State::Running)
+            return false;
+        status->state = EngineStatus::State::Running;
+        status->lastError.clear();
+        return true;
+    }
+
+    if ((match = codec.match(line)).hasMatch()) {
+        const QString name = decoderName(match.captured(1).at(0));
+        // An unrecognised codec character leaves the field alone: prd.md
+        // FR-2.5's rule is that an unknown stays unknown, and the UI hides it.
+        if (name.isEmpty() || status->decoder == name)
+            return false;
+        status->decoder = name;
+        return true;
+    }
+
+    if ((match = trackRate.match(line)).hasMatch()) {
+        const int rate = match.captured(1).toInt();
+        if (rate <= 0 || status->sourceSampleRate == rate)
+            return false;
+        status->sourceSampleRate = rate;
+        return true;
+    }
+
+    if ((match = opened.match(line)).hasMatch()) {
+        status->outputDevice = match.captured(1).trimmed();
+        status->outputSampleRate = match.captured(2).toInt();
+        return true;
+    }
+
+    if ((match = outputRate.match(line)).hasMatch()) {
+        const int rate = match.captured(1).toInt();
+        if (rate <= 0 || status->outputSampleRate == rate)
+            return false;
+        status->outputSampleRate = rate;
+        return true;
+    }
+
+    if (line.contains(QLatin1String("output underrun"))) {
+        // Unknown until the first one is seen, then a count. Starting at 0
+        // would claim "no underruns" for a backend that might never report
+        // any at all.
+        status->underruns = qMax(status->underruns, 0) + 1;
+        return true;
+    }
+
+    return false;
 }
 
 bool ExternalEngine::start(const EngineConfig &config)
 {
-    if (m_process->state() != QProcess::NotRunning)
-        stop();
-
     m_config = config;
+
+    // The one thing the engine is not handed: who it is. No module between
+    // LmsSession and here is allowed to carry a player id (prd.md FR-6.1), so
+    // the engine reads the same process-wide identity the session does.
+    if (m_config.playerId.isEmpty())
+        m_config.playerId = PlayerIdentity::mac();
+
+    m_consecutiveFailures = 0;
+    m_restartBackoffMs = kRestartBackoffStartMs;
+    return launch();
+}
+
+bool ExternalEngine::launch()
+{
+    m_stopRequested = false;
+
+    if (m_process->state() != QProcess::NotRunning) {
+        m_stopRequested = true;
+        m_process->terminate();
+        if (!m_process->waitForFinished(2000))
+            m_process->kill();
+        m_stopRequested = false;
+    }
+
+    if (!isAvailable()) {
+        setState(EngineStatus::State::Failed,
+                 tr("No audio engine found at %1").arg(m_executable));
+        return false;
+    }
+
+    // Everything scraped from the previous run describes a process that no
+    // longer exists. Keeping it would have the diagnostics panel report the
+    // old decoder as current — the exact "unknown reported as fact" failure
+    // prd.md FR-2.5 is about.
+    const EngineStatus fresh;
+    m_status.decoder = fresh.decoder;
+    m_status.outputDevice = fresh.outputDevice;
+    m_status.sourceSampleRate = fresh.sourceSampleRate;
+    m_status.sourceBitDepth = fresh.sourceBitDepth;
+    m_status.outputSampleRate = fresh.outputSampleRate;
+    m_status.streamBufferFill = fresh.streamBufferFill;
+    m_status.outputBufferFill = fresh.outputBufferFill;
+    m_status.underruns = fresh.underruns;
+    m_partialLine.clear();
+
     setState(EngineStatus::State::Starting);
 
 #ifdef Q_OS_WIN
@@ -103,17 +355,62 @@ bool ExternalEngine::start(const EngineConfig &config)
     // every start and every device change.
     m_process->setCreateProcessArgumentsModifier(
         [](QProcess::CreateProcessArguments *args) {
-            args->flags |= 0x08000000 /* CREATE_NO_WINDOW */;
+            args->flags |= CREATE_NO_WINDOW;
         });
 #endif
 
-    m_process->start(m_executable, buildArguments(config));
-    return m_process->waitForStarted(5000);
+    m_process->start(m_executable, buildArguments(m_config));
+    if (!m_process->waitForStarted(5000))
+        return false;
+
+    adoptIntoJob();
+    return true;
+}
+
+void ExternalEngine::adoptIntoJob()
+{
+#ifdef Q_OS_WIN
+    // prd.md §7.3.2: the child dies with the app and never orphans. A
+    // destructor cannot promise that — a crash, a Task Manager kill, or a
+    // power-off during shutdown all skip it. A Job Object with
+    // KILL_ON_JOB_CLOSE is enforced by the kernel: when the last handle to the
+    // job closes, which happens when this process ends however it ends,
+    // everything inside is terminated.
+    if (!m_job) {
+        HANDLE job = CreateJobObjectW(nullptr, nullptr);
+        if (!job)
+            return;
+
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {};
+        limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        if (!SetInformationJobObject(job, JobObjectExtendedLimitInformation,
+                                     &limits, sizeof(limits))) {
+            CloseHandle(job);
+            return;
+        }
+        m_job = job;
+    }
+
+    const qint64 pid = m_process->processId();
+    if (pid <= 0)
+        return;
+
+    HANDLE handle = OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, FALSE,
+                                static_cast<DWORD>(pid));
+    if (!handle)
+        return;
+
+    AssignProcessToJobObject(static_cast<HANDLE>(m_job), handle);
+    CloseHandle(handle);
+#endif
 }
 
 void ExternalEngine::stop()
 {
+    m_stopRequested = true;
+    m_restart->stop();
     setState(EngineStatus::State::Stopped);
+
     if (m_process->state() == QProcess::NotRunning)
         return;
 
@@ -124,40 +421,64 @@ void ExternalEngine::stop()
 
 bool ExternalEngine::setOutputDevice(const QString &device)
 {
+    if (m_config.outputDevice == device && m_process->state() != QProcess::NotRunning)
+        return true;
+
     // There is no channel to the running child, so this is a restart. The
     // player drops off the server and re-registers with the same id, which
-    // preserves the queue server-side (prd.md FR-2.7).
+    // preserves the queue server-side (prd.md FR-2.7). The visible blip is
+    // accepted; what must not happen is a crash, a lost queue, or a second
+    // player — which is why the id is unchanged and the old process is fully
+    // reaped before the new one starts.
     m_config.outputDevice = device;
+
+    if (m_process->state() == QProcess::NotRunning) {
+        // Nothing was running, so this is a preference change, not a restart.
+        return true;
+    }
     return start(m_config);
 }
 
-QList<AudioDevice> ExternalEngine::devices() const
+void ExternalEngine::refreshDevices()
 {
+    if (m_enumerator->state() != QProcess::NotRunning || !isAvailable())
+        return;
+
     // `squeezelite -l` lists devices and exits, so enumeration is a separate
     // short-lived invocation rather than a query against the running child.
-    // TODO: implement — parse the -l output into id/description pairs.
-    return {};
+    // It does not touch the player: no -s, no -m, nothing registered.
+#ifdef Q_OS_WIN
+    m_enumerator->setCreateProcessArgumentsModifier(
+        [](QProcess::CreateProcessArguments *args) {
+            args->flags |= CREATE_NO_WINDOW;
+        });
+#endif
+    m_enumerator->start(m_executable, { QStringLiteral("-l") });
 }
 
 void ExternalEngine::handleStandardError()
 {
-    const QByteArray chunk = m_process->readAllStandardError();
-    const QList<QByteArray> lines = chunk.split('\n');
-    for (const QByteArray &line : lines) {
-        const QString text = QString::fromLocal8Bit(line).trimmed();
+    m_partialLine += m_process->readAllStandardError();
+
+    bool changed = false;
+    int newline = 0;
+    while ((newline = m_partialLine.indexOf('\n')) >= 0) {
+        const QByteArray raw = m_partialLine.left(newline);
+        m_partialLine.remove(0, newline + 1);
+
+        const QString text = QString::fromLocal8Bit(raw).trimmed();
         if (text.isEmpty())
             continue;
 
         Q_EMIT logLine(text);
+        if (applyLogLine(text, &m_status))
+            changed = true;
+    }
 
-        // TODO: scrape decoder, sample rate and buffer fill into m_status.
-        // This is the accepted weak point of Backend B — the log format is
-        // not a stable interface, so a failed match must leave the field
-        // unknown rather than guess.
-        if (m_status.state == EngineStatus::State::Starting
-            && text.contains(QLatin1String("connected"), Qt::CaseInsensitive)) {
-            setState(EngineStatus::State::Running);
-        }
+    if (changed) {
+        if (m_status.state == EngineStatus::State::Running)
+            m_consecutiveFailures = 0;
+        publish();
     }
 }
 
@@ -168,7 +489,12 @@ void ExternalEngine::setState(EngineStatus::State state, const QString &error)
 
     m_status.state = state;
     m_status.lastError = error;
-    Q_EMIT statusChanged(m_status);
+    publish();
     if (!error.isEmpty())
         Q_EMIT errorOccurred(error);
+}
+
+void ExternalEngine::publish()
+{
+    Q_EMIT statusChanged(m_status);
 }

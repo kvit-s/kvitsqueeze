@@ -10,7 +10,10 @@
 
 #include "iaudioengine.h"
 
+#include <QList>
 #include <QProcess>
+
+class QTimer;
 
 class ExternalEngine : public IAudioEngine
 {
@@ -20,14 +23,21 @@ public:
     explicit ExternalEngine(QObject *parent = nullptr);
     ~ExternalEngine() override;
 
-    // Path to squeezelite.exe. Set before start(); defaults to "squeezelite"
-    // beside the application, which is where the installer stages it.
+    // Path to squeezelite.exe. Set before start(); defaults to
+    // engine/squeezelite.exe beside the application, which is where the
+    // installer stages it.
     void setExecutablePath(const QString &path);
+    QString executablePath() const { return m_executable; }
+
+    // False when the binary is not where it is expected, so the UI can say
+    // "the audio engine is missing" instead of failing at the first play.
+    bool isAvailable() const override;
 
     bool start(const EngineConfig &config) override;
     void stop() override;
     bool setOutputDevice(const QString &device) override;
-    QList<AudioDevice> devices() const override;
+    QList<AudioDevice> devices() const override { return m_devices; }
+    void refreshDevices() override;
     EngineStatus status() const override { return m_status; }
 
     // The argument vector for a config, as a pure function so it can be
@@ -39,12 +49,45 @@ public:
     // does not (prd.md §7.3.2).
     static QStringList buildArguments(const EngineConfig &config);
 
+    // Parse `squeezelite -l` output. Separate and static because the format is
+    // upstream's and a change in it should fail a test, not a user's settings
+    // screen. Lines look like:
+    //
+    //     Output devices:
+    //       11 - Realtek Digital Output (Realtek(R) Audio) [Windows WASAPI]
+    static QList<AudioDevice> parseDeviceList(const QString &output);
+
+    // Fold one log line into a status. Static and pure for the same reason:
+    // this is the whole of FR-2.5 under Backend B and the log format is not a
+    // stable interface, so it needs cases rather than hope. Returns true when
+    // something actually changed.
+    //
+    // The rule that matters is prd.md FR-2.5's: a line that does not match
+    // must leave the field *unknown*. Reporting a sample rate of 0 as fact is
+    // worse than reporting nothing.
+    static bool applyLogLine(const QString &line, EngineStatus *status);
+
 private:
     void handleStandardError();
     void setState(EngineStatus::State state, const QString &error = {});
+    void publish();
+    bool launch();
+    void adoptIntoJob();
 
     QProcess *m_process = nullptr;
+    QProcess *m_enumerator = nullptr;
+    QTimer *m_restart = nullptr;
     QString m_executable;
     EngineConfig m_config;
     EngineStatus m_status;
+    QList<AudioDevice> m_devices;
+    QByteArray m_partialLine;
+    int m_restartBackoffMs = 1000;
+    int m_consecutiveFailures = 0;
+    bool m_stopRequested = false;
+
+    // Windows Job Object with KILL_ON_JOB_CLOSE (prd.md §7.3.2). Held as a
+    // void* so this header names no Windows type; the app must never leave a
+    // squeezelite behind holding the audio device and a player registration.
+    void *m_job = nullptr;
 };

@@ -1,0 +1,171 @@
+#include "enginecontroller.h"
+
+#include "settings.h"
+
+namespace {
+
+QString formatRate(int hz)
+{
+    if (hz <= 0)
+        return {};
+    if (hz % 1000 == 0)
+        return QStringLiteral("%1 kHz").arg(hz / 1000);
+    return QStringLiteral("%1 kHz").arg(hz / 1000.0, 0, 'f', 1);
+}
+
+ResampleQuality toQuality(int value)
+{
+    switch (value) {
+    case 1: return ResampleQuality::Fast;
+    case 2: return ResampleQuality::Balanced;
+    case 3: return ResampleQuality::High;
+    case 4: return ResampleQuality::VeryHigh;
+    default: return ResampleQuality::Off;
+    }
+}
+
+bool sameProcessConfig(const EngineConfig &a, const EngineConfig &b)
+{
+    // Only the fields that go on the command line. Anything else changing is
+    // not a reason to drop the SlimProto session and re-register the player
+    // (prd.md FR-2.7 — the restart is accepted, but only when it is needed).
+    return a.serverHost == b.serverHost && a.serverPort == b.serverPort
+           && a.playerName == b.playerName && a.outputDevice == b.outputDevice
+           && a.latencyMs == b.latencyMs && a.exclusive == b.exclusive
+           && a.resample == b.resample;
+}
+
+} // namespace
+
+EngineController::EngineController(IAudioEngine *engine, Settings *settings, QObject *parent)
+    : QObject(parent)
+    , m_engine(engine)
+    , m_settings(settings)
+{
+    connect(m_engine, &IAudioEngine::statusChanged, this, [this](const EngineStatus &status) {
+        m_status = status;
+        Q_EMIT statusChanged();
+    });
+    connect(m_engine, &IAudioEngine::devicesChanged, this, &EngineController::devicesChanged);
+    connect(m_engine, &IAudioEngine::logLine, this, &EngineController::logLine);
+    connect(m_engine, &IAudioEngine::errorOccurred, this, [this] { Q_EMIT statusChanged(); });
+
+    connect(m_settings, &Settings::engineChanged, this, &EngineController::apply);
+}
+
+QString EngineController::stateText() const
+{
+    switch (m_status.state) {
+    case EngineStatus::State::Stopped:  return tr("Stopped");
+    case EngineStatus::State::Starting: return tr("Starting…");
+    case EngineStatus::State::Running:  return tr("Connected");
+    case EngineStatus::State::Failed:   return tr("Failed");
+    }
+    return {};
+}
+
+QStringList EngineController::deviceNames() const
+{
+    QStringList names;
+    const QList<AudioDevice> devices = m_engine->devices();
+    names.reserve(devices.size());
+    for (const AudioDevice &device : devices)
+        names << device.description;
+    return names;
+}
+
+QString EngineController::formatBadge() const
+{
+    // prd.md FR-2.5: every part of this is omitted when the backend could not
+    // determine it, so the badge shrinks rather than inventing a number. On a
+    // scraped backend "FLAC" alone is a perfectly normal result.
+    QStringList parts;
+    if (!m_status.decoder.isEmpty())
+        parts << m_status.decoder;
+
+    QString source = formatRate(m_status.sourceSampleRate);
+    if (!source.isEmpty() && m_status.sourceBitDepth > 0)
+        source += QStringLiteral("/%1").arg(m_status.sourceBitDepth);
+    if (!source.isEmpty())
+        parts << source;
+
+    const QString output = formatRate(m_status.outputSampleRate);
+    if (!output.isEmpty() && output != formatRate(m_status.sourceSampleRate))
+        parts << QStringLiteral("→ %1").arg(output);
+
+    if (parts.isEmpty())
+        return {};
+
+    // prd.md FR-2.4 makes shared mode the product decision, so saying so is
+    // information rather than an apology: other applications stay audible.
+    parts << (m_applied.exclusive ? tr("exclusive") : tr("shared"));
+    return parts.join(QLatin1Char(' '));
+}
+
+void EngineController::setServerHost(const QString &host)
+{
+    if (m_serverHost == host)
+        return;
+    m_serverHost = host;
+    apply();
+}
+
+EngineConfig EngineController::buildConfig() const
+{
+    EngineConfig config;
+    config.serverHost = m_serverHost;
+    // serverPort stays at the SlimProto default: the control API's port is a
+    // different port on the same machine and is none of the engine's business.
+    config.playerName = m_settings->playerName();
+    config.outputDevice = m_settings->outputDevice();
+    config.latencyMs = m_settings->outputLatencyMs();
+    config.exclusive = m_settings->exclusiveOutput();
+    config.resample = toQuality(m_settings->resampleQuality());
+    // The identity field is left empty on purpose. The engine fills it from
+    // the process-wide PlayerIdentity, because no module at this level may
+    // carry the value that names our player (prd.md FR-6.1) — which is also
+    // why this comment does not spell the field's name.
+    return config;
+}
+
+void EngineController::start()
+{
+    m_wanted = true;
+    apply();
+}
+
+void EngineController::stop()
+{
+    m_wanted = false;
+    m_engine->stop();
+}
+
+void EngineController::apply()
+{
+    const bool wasAvailable = m_available;
+    m_available = m_engine->isAvailable();
+
+    const EngineConfig config = buildConfig();
+
+    if (!m_wanted || config.serverHost.isEmpty()) {
+        m_applied = config;
+        if (wasAvailable != m_available)
+            Q_EMIT statusChanged();
+        return;
+    }
+
+    if (sameProcessConfig(config, m_applied)
+        && m_status.state != EngineStatus::State::Stopped
+        && m_status.state != EngineStatus::State::Failed) {
+        return;
+    }
+
+    m_applied = config;
+    m_engine->start(config);
+    Q_EMIT statusChanged();
+}
+
+void EngineController::refreshDevices()
+{
+    m_engine->refreshDevices();
+}

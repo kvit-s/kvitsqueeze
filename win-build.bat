@@ -36,5 +36,5 @@ exit /b %errorlevel%
 
 :test
 set PATH=%QT_ROOT_DIR%\bin;%PATH%
-"%CTEST%" --test-dir build-windows-msvc-release -C Release -L unit --output-on-failure
+"%CTEST%" --test-dir build-windows-msvc-release -C Release -L "unit|shell" --output-on-failure
 exit /b %errorlevel%
