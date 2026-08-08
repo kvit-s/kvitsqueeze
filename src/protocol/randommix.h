@@ -24,11 +24,26 @@ namespace RandomMix {
 // lives here instead of being spelled out at each call site.
 enum class Type { Songs, Albums, Artists, Years, Works };
 
+// **The token you send is not the token you get back.** The plugin's CLI takes
+// the plural forms its own menu uses and maps them onto the singular names it
+// keeps internally (`tracks` → `track`, `contributors` → `contributor`), and
+// `randomplayisactive` reports that internal singular. Sending `randomplay
+// tracks` and then being told the mix is a `track` is correct behaviour, not a
+// server quirk to route around.
+//
+// This cost a wrong label in the shipped UI once: a running Song Mix read as
+// the generic "Random Mix" and its button did not light, because only the
+// plural was recognised.
 QString token(Type type);
 
-// The index of a wire token in Type order, or -1 when the server named a mix
-// this build does not know. A plugin update that adds a sixth mix must not be
-// silently reported as one of the five that are recognised.
+// The index of a reported token in Type order, or -1 when the server named a
+// mix this build does not know. Accepts both spellings, because the same value
+// arrives one way from the menu and the other from a status query. `artists`
+// is here too: the plugin's own map accepts it as an alias for `contributors`.
+//
+// A plugin update that adds a sixth mix must not be silently reported as one
+// of the five that are recognised, which is why an unknown token stays -1
+// rather than falling back on the first entry.
 int indexOfToken(const QString &wireToken);
 
 // Whether a mix is running — as three states, not two.

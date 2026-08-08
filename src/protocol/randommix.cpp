@@ -5,25 +5,57 @@
 
 namespace RandomMix {
 
+namespace {
+
+// Sent, reported, and any further alias the plugin's own map accepts.
+//
+// The two columns differ because the CLI takes plurals and stores singulars —
+// see the note in randommix.h. `year` happens to be spelled the same both
+// ways, which is exactly the sort of coincidence that makes a one-column table
+// look right until it is tested against a running mix.
+struct Spelling
+{
+    Type type;
+    const char *sent;
+    const char *reported;
+    const char *alias; // nullptr when there is none
+};
+
+constexpr Spelling kSpellings[] = {
+    { Type::Songs,   "tracks",       "track",       nullptr },
+    { Type::Albums,  "albums",       "album",       nullptr },
+    { Type::Artists, "contributors", "contributor", "artists" },
+    { Type::Years,   "year",         "year",        "years" },
+    { Type::Works,   "works",        "work",        nullptr },
+};
+
+} // namespace
+
 QString token(Type type)
 {
-    switch (type) {
-    case Type::Songs:   return QStringLiteral("tracks");
-    case Type::Albums:  return QStringLiteral("albums");
-    case Type::Artists: return QStringLiteral("contributors");
-    case Type::Years:   return QStringLiteral("year");
-    case Type::Works:   return QStringLiteral("works");
+    for (const Spelling &spelling : kSpellings) {
+        if (spelling.type == type)
+            return QString::fromLatin1(spelling.sent);
     }
-    return QStringLiteral("tracks");
+    return QString::fromLatin1(kSpellings[0].sent);
 }
 
 int indexOfToken(const QString &wireToken)
 {
-    static const Type all[] = { Type::Songs, Type::Albums, Type::Artists,
-                                Type::Years, Type::Works };
-    for (const Type type : all) {
-        if (token(type) == wireToken)
-            return int(type);
+    if (wireToken.isEmpty())
+        return -1;
+
+    // The plugin lowercases whatever it is given before storing it, so a
+    // comparison that did not would depend on how the mix happened to be
+    // started.
+    const QString needle = wireToken.trimmed().toLower();
+
+    for (const Spelling &spelling : kSpellings) {
+        if (needle == QLatin1String(spelling.sent)
+            || needle == QLatin1String(spelling.reported)
+            || (spelling.alias && needle == QLatin1String(spelling.alias))) {
+            return int(spelling.type);
+        }
     }
     return -1;
 }

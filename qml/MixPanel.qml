@@ -87,6 +87,7 @@ ColumnLayout {
         }
 
         Repeater {
+            id: mixButtons
             model: [
                 { "type": Mix.Songs,   "label": qsTr("Songs") },
                 { "type": Mix.Albums,  "label": qsTr("Albums") },
@@ -109,29 +110,29 @@ ColumnLayout {
                 onClicked: control.start(mixButton.modelData.type)
             }
         }
-    }
 
-    // ── The scope, stated whether or not anyone asked.
-    //
-    // It is a server-side pref shared with every other controller and it
-    // survives restarts, so a narrowing done weeks ago is still in force. That
-    // is unguessable from the mix itself — it just quietly plays less music.
-    RowLayout {
-        Layout.alignment: Qt.AlignHCenter
-        spacing: 6
-
-        Label {
-            text: app.mix.genreSummary
-            visible: text.length > 0
-            color: theme.textFaint
-            font.pixelSize: theme.fontSmall
-        }
         Button {
-            text: qsTr("Choose genres…")
+            text: qsTr("Genres…")
             flat: true
             font.pixelSize: theme.fontSmall
             onClicked: control.openGenres()
         }
+    }
+
+    // ── The scope, but only when it is narrowed.
+    //
+    // It is a server-side pref shared with every other controller and it
+    // survives restarts, so a narrowing done weeks ago is still in force —
+    // unguessable from the mix itself, which just quietly plays less music.
+    // Saying "every genre" when nothing is excluded would be a line of chrome
+    // that is always there and never worth reading; this is the state that is
+    // actually worth interrupting for.
+    Label {
+        Layout.alignment: Qt.AlignHCenter
+        visible: app.mix.genres.loaded && app.mix.genres.narrowed
+        text: app.mix.genreSummary
+        color: theme.textFaint
+        font.pixelSize: theme.fontSmall
     }
 
     // The summary is only true once it has been read, and reading it costs a

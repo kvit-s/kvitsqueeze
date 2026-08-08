@@ -25,10 +25,28 @@ Item {
 
         Item { Layout.fillHeight: true; Layout.preferredHeight: 1 }
 
+        // The cover is the item that gives way when the window is short, and it
+        // has to be told so. A Layout child with `fillHeight: false` is pinned
+        // to its preferred size and will not shrink no matter how little room
+        // is left — the layout overflows its parent instead and the rows below
+        // are drawn under the bottom bar.
+        //
+        // That is exactly what adding the mix panel exposed: the cover kept its
+        // 320 px and the mix buttons went off the bottom of the window. Every
+        // row under here is text and controls at their implicit height, so the
+        // cover is the only thing that *can* give, which makes it the only
+        // thing that should be flexible.
         Artwork {
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: Math.min(root.width * 0.5, root.height * 0.46, 460)
-            Layout.preferredHeight: Layout.preferredWidth
+            Layout.fillHeight: true
+            Layout.minimumHeight: 96
+            Layout.maximumHeight: Math.min(root.width * 0.5, 460)
+            Layout.preferredHeight: Layout.maximumHeight
+            // Square, following the height the layout settled on. One-way:
+            // width follows height, height never follows width.
+            Layout.preferredWidth: height
+            Layout.minimumWidth: height
+            Layout.maximumWidth: height
             coverId: app.player.coverId
             requestSize: 600
         }

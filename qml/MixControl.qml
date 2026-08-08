@@ -95,17 +95,36 @@ Item {
         title: qsTr("Replace the queue?")
         standardButtons: Dialog.Ok | Dialog.Cancel
 
+        // A wrapping Label derives its height from its width; a Dialog derives
+        // its width from its content. Left to negotiate they loop — first on
+        // implicitWidth, and then on implicitHeight once only the width was
+        // pinned, because the label was still reading its width back down from
+        // the dialog.
+        //
+        // Cut by making nothing in the message read the dialog's size at all.
+        // The text wraps at a constant width, the dialog is that width plus its
+        // own padding, and the height reported upward is the painted height of
+        // text whose width was never in question.
+        readonly property int messageWidth: 380
+
+        width: confirm.messageWidth + confirm.leftPadding + confirm.rightPadding
+
         onAccepted: app.mix.start(confirm.pendingType)
 
-        Label {
-            width: 360
-            wrapMode: Text.WordWrap
-            color: theme.textPrimary
-            text: qsTr("Starting the %1 clears the %n track(s) in the queue and "
-                       + "fills it with a fresh selection. The server does this "
-                       + "for every controller, not just SqeezeAmp.", "",
-                       app.queue.count)
-                  .arg(app.mix.nameForType(confirm.pendingType))
+        contentItem: Item {
+            implicitHeight: message.contentHeight
+
+            Label {
+                id: message
+                width: confirm.messageWidth
+                wrapMode: Text.WordWrap
+                color: theme.textPrimary
+                text: qsTr("Starting the %1 clears the %n track(s) in the queue "
+                           + "and fills it with a fresh selection. The server "
+                           + "does this for every controller, not just "
+                           + "SqeezeAmp.", "", app.queue.count)
+                      .arg(app.mix.nameForType(confirm.pendingType))
+            }
         }
     }
 

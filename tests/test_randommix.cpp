@@ -25,6 +25,7 @@ class TestRandomMix : public QObject
 
 private slots:
     void tokensMatchTheServersVocabulary();
+    void theReportedSpellingIsNotTheSentSpelling();
     void anUnknownMixTypeIsNotGuessedAt();
 
     void aNullAnswerMeansNoMixIsRunning();
@@ -61,6 +62,38 @@ void TestRandomMix::tokensMatchTheServersVocabulary()
              int(RandomMix::Type::Artists));
 }
 
+void TestRandomMix::theReportedSpellingIsNotTheSentSpelling()
+{
+    // The regression this file exists for. The CLI takes the plural forms the
+    // plugin's own menu uses and maps them onto the singular names it keeps
+    // internally, and `randomplayisactive` reports that singular. A running
+    // Song Mix started with `randomplay tracks` answers "track".
+    //
+    // Recognising only the sent spelling shipped once: the indicator read
+    // "Random Mix" over a Song Mix and its button did not light.
+    QCOMPARE(RandomMix::indexOfToken(QStringLiteral("track")),
+             int(RandomMix::Type::Songs));
+    QCOMPARE(RandomMix::indexOfToken(QStringLiteral("album")),
+             int(RandomMix::Type::Albums));
+    QCOMPARE(RandomMix::indexOfToken(QStringLiteral("contributor")),
+             int(RandomMix::Type::Artists));
+    QCOMPARE(RandomMix::indexOfToken(QStringLiteral("work")),
+             int(RandomMix::Type::Works));
+
+    // `year` is spelled the same both ways — the coincidence that makes a
+    // single-column table look correct until a mix is actually running.
+    QCOMPARE(RandomMix::indexOfToken(QStringLiteral("year")),
+             int(RandomMix::Type::Years));
+
+    // `artists` is the plugin's own alias for `contributors`.
+    QCOMPARE(RandomMix::indexOfToken(QStringLiteral("artists")),
+             int(RandomMix::Type::Artists));
+
+    // The plugin lowercases what it is handed before storing it.
+    QCOMPARE(RandomMix::indexOfToken(QStringLiteral("Track")),
+             int(RandomMix::Type::Songs));
+}
+
 void TestRandomMix::anUnknownMixTypeIsNotGuessedAt()
 {
     // A plugin update may add a sixth mix. Mapping it onto one of the five
@@ -93,12 +126,14 @@ void TestRandomMix::aMissingAnswerMeansNobodyKnows()
 
 void TestRandomMix::aTypeTokenMeansThatMixIsRunning()
 {
+    // Verbatim from the running server while a Song Mix was playing — note the
+    // singular, which is what the plugin stores and reports.
     const RandomMix::State state = RandomMix::State::fromActiveResult(
-        object(R"({"_randomplayisactive": "tracks"})"));
+        object(R"({"_randomplayisactive": "track"})"));
 
     QCOMPARE(state.status, RandomMix::State::Status::Active);
     QVERIFY(state.isActive());
-    QCOMPARE(state.typeToken, QStringLiteral("tracks"));
+    QCOMPARE(state.typeToken, QStringLiteral("track"));
     QCOMPARE(RandomMix::indexOfToken(state.typeToken), int(RandomMix::Type::Songs));
 }
 

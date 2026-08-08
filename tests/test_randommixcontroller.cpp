@@ -95,7 +95,9 @@ void TestRandomMixController::anActiveAnswerNamesTheMix()
     LmsSession session;
     RandomMixController mix(&session);
 
-    Q_EMIT session.mixStateReceived(active(QStringLiteral("contributors")));
+    // The singular the server actually reports, not the plural we sent to
+    // start it — the two differ and the controller has to bridge them.
+    Q_EMIT session.mixStateReceived(active(QStringLiteral("contributor")));
 
     QVERIFY(mix.isActive());
     QVERIFY(mix.isKnown());
@@ -173,7 +175,7 @@ void TestRandomMixController::aMixEndedBySomethingElseIsAnnounced()
     RandomMixController mix(&session);
     QSignalSpy spy(&mix, &RandomMixController::mixStoppedUnexpectedly);
 
-    Q_EMIT session.mixStateReceived(active(QStringLiteral("tracks")));
+    Q_EMIT session.mixStateReceived(active(QStringLiteral("track")));
     QCOMPARE(spy.count(), 0);
 
     // Something loaded a queue past the plugin — this app's own "play now",
@@ -188,7 +190,7 @@ void TestRandomMixController::aStopWeAskedForIsNotAnnounced()
 {
     LmsSession session;
     RandomMixController mix(&session);
-    Q_EMIT session.mixStateReceived(active(QStringLiteral("tracks")));
+    Q_EMIT session.mixStateReceived(active(QStringLiteral("track")));
 
     QSignalSpy spy(&mix, &RandomMixController::mixStoppedUnexpectedly);
 
@@ -202,7 +204,7 @@ void TestRandomMixController::aLateReplyToOurOwnStopIsStillNotAnnounced()
 {
     LmsSession session;
     RandomMixController mix(&session);
-    Q_EMIT session.mixStateReceived(active(QStringLiteral("tracks")));
+    Q_EMIT session.mixStateReceived(active(QStringLiteral("track")));
 
     QSignalSpy spy(&mix, &RandomMixController::mixStoppedUnexpectedly);
 
@@ -223,7 +225,7 @@ void TestRandomMixController::losingTheConnectionMakesTheStateUnknownRatherThanO
     LmsSession session;
     RandomMixController mix(&session);
 
-    Q_EMIT session.mixStateReceived(active(QStringLiteral("tracks")));
+    Q_EMIT session.mixStateReceived(active(QStringLiteral("track")));
     QVERIFY(mix.isActive());
 
     QSignalSpy spy(&mix, &RandomMixController::mixStoppedUnexpectedly);

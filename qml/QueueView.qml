@@ -14,6 +14,7 @@ Item {
     id: root
 
     Theme { id: theme }
+    MixControl { id: mixControl }
 
     ColumnLayout {
         anchors.fill: parent
@@ -81,6 +82,16 @@ Item {
                     }
                 }
 
+                // Both halves of this belong here rather than only on
+                // now-playing. Somebody whose listening *is* a random mix reads
+                // the queue, not the cover — and the first build shipped the
+                // start buttons on now-playing only, which meant the person the
+                // feature was built for never saw them.
+                Button {
+                    text: qsTr("Random mix…")
+                    visible: !app.mix.active
+                    onClicked: mixControl.openMenu()
+                }
                 Button {
                     text: qsTr("Stop the mix")
                     visible: app.mix.active
