@@ -173,6 +173,7 @@ add_library(sqz-qml ${SQZ_LIB_TYPE}
     src/qml/singleinstance.cpp
     src/qml/sqeezeampapplication.cpp
     src/qml/systemmediacontrols.cpp
+    src/qml/taskbarbuttons.cpp
     src/qml/traycontroller.cpp
     src/qml/qmlsingletons.h
 )
@@ -191,6 +192,11 @@ if(WIN32)
     # C++/WinRT headers are absent, so this is the only place the feature can
     # affect the build.
     target_link_libraries(sqz-qml PRIVATE windowsapp)
+
+    # The taskbar thumbnail toolbar (prd.md FR-7.7): ITaskbarList3 from ole32,
+    # its icon strip from comctl32. Guarded by a header test in
+    # taskbarbuttons.cpp for the same reason as the WinRT block above.
+    target_link_libraries(sqz-qml PRIVATE ole32 comctl32)
 endif()
 
 target_compile_definitions(sqz-qml PRIVATE SQZ_VERSION="${SQZ_VERSION_FULL}")

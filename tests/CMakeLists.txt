@@ -54,6 +54,13 @@ sqz_add_test(ExternalEngineTests test_externalengine.cpp unit)
 # this is what turns a missing resources.qrc entry into a red test.
 sqz_add_test(ShellTests test_shell.cpp shell)
 
+# ── The taskbar thumbnail toolbar's one portable decision (prd.md FR-7.7).
+#
+# The rest of that class is Win32 and needs a taskbar button to hover. This
+# covers which glyph the middle button offers, which is the part that can be
+# wrong without looking wrong.
+sqz_add_test(TaskbarButtonsTests test_taskbarbuttons.cpp unit)
+
 # ── The one interaction that is worth real mouse events.
 #
 # ShellTests proves every view loads; it cannot prove a control does anything.

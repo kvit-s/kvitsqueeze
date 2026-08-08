@@ -7,6 +7,7 @@
 #include "mediakeys.h"
 #include "singleinstance.h"
 #include "systemmediacontrols.h"
+#include "taskbarbuttons.h"
 #include "traycontroller.h"
 
 #include <QGuiApplication>
@@ -144,6 +145,31 @@ void SqeezeAmpApplication::wireWindowsIntegration()
 
     connect(player, &PlaybackController::nowPlayingChanged, this, pushMetadata);
     connect(player, &PlaybackController::stateChanged, this, pushState);
+
+    // ── Taskbar thumbnail toolbar (prd.md FR-7.7).
+    //
+    // The third route to the same three calls, and the one that covers the
+    // case the other two do not: the window is open, behind something else,
+    // and raising it to skip a track is the thing worth avoiding.
+    m_taskbarButtons = new TaskbarButtons(this);
+    if (QQuickWindow *shellWindow = window())
+        m_taskbarButtons->attach(reinterpret_cast<void *>(shellWindow->winId()));
+
+    connect(m_taskbarButtons, &TaskbarButtons::previousRequested,
+            player, &PlaybackController::previous);
+    connect(m_taskbarButtons, &TaskbarButtons::playPauseRequested,
+            player, &PlaybackController::playPause);
+    connect(m_taskbarButtons, &TaskbarButtons::nextRequested,
+            player, &PlaybackController::next);
+
+    const auto pushTaskbar = [this, player] {
+        // Disabled rather than hidden while the player is off: the row keeps
+        // its shape, and a greyed button says "not now" where a missing one
+        // says "this app cannot do that" (prd.md FR-6.3).
+        m_taskbarButtons->setState(player->isPlaying(), player->isPowered());
+    };
+    connect(player, &PlaybackController::stateChanged, this, pushTaskbar);
+    pushTaskbar();
 
     // ── Engine trouble while the window is closed to the tray has nowhere
     // else to be seen (prd.md FR-1.7).

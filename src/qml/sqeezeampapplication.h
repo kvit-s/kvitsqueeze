@@ -18,6 +18,7 @@ class MediaKeys;
 class QQuickWindow;
 class SingleInstance;
 class SystemMediaControls;
+class TaskbarButtons;
 class TrayController;
 
 class SqeezeAmpApplication : public QObject
@@ -75,6 +76,7 @@ private:
     TrayController *m_tray = nullptr;
     MediaKeys *m_mediaKeys = nullptr;
     SystemMediaControls *m_smtc = nullptr;
+    TaskbarButtons *m_taskbarButtons = nullptr;
     QQmlApplicationEngine m_engine;
     bool m_mediaKeysHeld = false;
     bool m_toldAboutTray = false;
