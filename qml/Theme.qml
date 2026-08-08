@@ -49,8 +49,22 @@ QtObject {
     readonly property color danger:  dark ? "#e0605c" : "#c5221f"
 
     // ── Metrics. prd.md §9.3: rows ≥ 32 px comfortable, ≥ 24 px compact.
+    //
+    // These are the height of the whole row, and every list delegate that uses
+    // one must set `topPadding: 0; bottomPadding: 0`. A Basic ItemDelegate
+    // brings **12 px of padding above and below** its content, which is not
+    // visible in the QML and is not subtracted from anything: a 40 px row
+    // leaves 16 px for content, a 34 px row leaves 10, and a compact 26 px row
+    // leaves 2. Nothing clips it, so the surplus is drawn over the neighbouring
+    // rows — the queue's two-line rows overlapped by about 17 px.
+    //
+    // Measured rather than reasoned: one line of fontNormal is 18 px, and the
+    // queue's title-over-artist column is 33 px comfortable and 31 compact.
+    // That last number is why compact rows are 34 and not 30 — two lines of
+    // text do not fit in 30 px at any padding, and the queue is the only view
+    // that stacks two.
     readonly property int rowHeight:   compact ? 26 : 34
-    readonly property int trackHeight: compact ? 30 : 40
+    readonly property int trackHeight: compact ? 34 : 40
     readonly property int spacing:     compact ? 6 : 10
     readonly property int margin:      compact ? 8 : 14
     readonly property int radius:      4

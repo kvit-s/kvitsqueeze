@@ -103,6 +103,11 @@ Item {
                 width: ListView.view.width
                 height: theme.rowHeight
 
+                // See Theme.qml's metrics: an ItemDelegate hides 12 px of
+                // padding above and below its content.
+                topPadding: 0
+                bottomPadding: 0
+
                 background: Rectangle {
                     color: row.hovered ? theme.surfaceHover : "transparent"
                 }

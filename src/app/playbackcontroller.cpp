@@ -17,6 +17,17 @@ constexpr qint64 kOptimisticWindowMs = 500;
 // often the binding is re-evaluated — not a poll.
 constexpr int kTickMs = 16;
 
+// How short a track has to fall before it is worth saying so. A normal
+// hand-over lands a second or two under the duration, because the last
+// snapshot before the change was taken a moment before the end — so this is
+// well clear of that, and well under the 47 s that prompted it.
+constexpr double kEarlyEndSeconds = 5.0;
+
+// A skip this app asked for arrives as a track change a moment later. Wider
+// than the reconciliation window because it covers a round trip plus the
+// server actually starting the next track.
+constexpr qint64 kRequestedSkipWindowMs = 3000;
+
 } // namespace
 
 PlaybackController::PlaybackController(LmsSession *session, QObject *parent)
@@ -89,6 +100,12 @@ bool PlaybackController::optimisticStillValid(const QDateTime &stamp) const
 void PlaybackController::applyStatus(const PlayerStatus &status)
 {
     const PlayerStatus previous = m_status;
+
+    // Before m_status is replaced: elapsed() is interpolated from the *current*
+    // track's base and stamp, so once the new snapshot lands there is no way
+    // back to how far the outgoing track actually got.
+    const double previousElapsed = elapsed();
+
     m_status = status;
 
     // ── Reconciliation. The snapshot has already been assigned, so the server
@@ -124,8 +141,25 @@ void PlaybackController::applyStatus(const PlayerStatus &status)
                             || previous.coverId != m_status.coverId
                             || previous.duration != m_status.duration;
 
-    if (trackMoved)
+    if (trackMoved) {
+        // Only a track that was *playing* and had a duration to fall short of.
+        // A stop, a queue rebuild, or a track the server never gave a length
+        // are all silent: prd.md FR-2.5's rule, applied to a complaint —
+        // an unknown must not be reported as a fault.
+        const bool wasPlaying = previous.mode == PlayerStatus::Mode::Playing;
+        const bool weAskedForIt =
+            m_trackChangeRequestedAt.isValid()
+            && m_trackChangeRequestedAt.msecsTo(QDateTime::currentDateTimeUtc())
+                   < kRequestedSkipWindowMs;
+
+        if (wasPlaying && !weAskedForIt && previous.duration > 0 && previousElapsed >= 0
+            && previous.duration - previousElapsed > kEarlyEndSeconds) {
+            Q_EMIT trackEndedEarly(previous.title, previousElapsed, previous.duration);
+        }
+        m_trackChangeRequestedAt = {};
+
         Q_EMIT trackChanged();
+    }
     if (previous.volume != m_status.volume || previous.muted != m_status.muted)
         Q_EMIT volumeChanged();
     if (previous.repeat != m_status.repeat || previous.shuffle != m_status.shuffle)
@@ -220,11 +254,13 @@ void PlaybackController::stop()
 
 void PlaybackController::next()
 {
+    m_trackChangeRequestedAt = QDateTime::currentDateTimeUtc();
     m_session->send(LmsCommand::next());
 }
 
 void PlaybackController::previous()
 {
+    m_trackChangeRequestedAt = QDateTime::currentDateTimeUtc();
     m_session->send(LmsCommand::previous());
 }
 

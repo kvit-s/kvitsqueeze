@@ -118,6 +118,19 @@ Q_SIGNALS:
     // as opposed to any of its fields being refreshed with the same value.
     void nowPlayingChanged();
 
+    // A track that stopped well before its end while nobody asked it to.
+    //
+    // This exists because it happened and left no trace: a 3:17 track moved on
+    // at about 2:30, and afterwards there was nothing to look at. Engine output
+    // goes to the diagnostics panel and to qCDebug, which the default rules
+    // switch off, so the log file held two lines — both of them "starting".
+    //
+    // Deliberately a *report*, not a diagnosis. The app cannot tell a cut
+    // stream from a short file from a server that moved on, and guessing in a
+    // log line is how the next person is sent the wrong way. It says what was
+    // played, out of what, and lets the numbers speak.
+    void trackEndedEarly(const QString &title, double playedSeconds, double durationSeconds);
+
 private:
     void applyStatus(const PlayerStatus &status);
     void optimisticMode(PlayerStatus::Mode mode);
@@ -130,6 +143,11 @@ private:
 
     PlayerStatus m_status;
     QString m_lastAnnouncedTrack;
+
+    // When this app last asked for a different track. A skip the user pressed
+    // ends the previous track early by definition and is not worth reporting;
+    // one that nobody asked for is the whole point of the signal above.
+    QDateTime m_trackChangeRequestedAt;
 
     // The authoritative position and the moment it arrived. Everything the
     // seek bar shows is derived from these two, so a dropped notification

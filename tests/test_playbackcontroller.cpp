@@ -39,7 +39,26 @@ private slots:
     void positionNeverRunsPastTheEnd();
     void unknownPositionStaysUnknown();
 
+    void aTrackThatStopsWellShortIsReported();
+    void aNormalHandoverIsNotReported();
+    void aSkipWeAskedForIsNotReported();
+    void aTrackWithNoDurationIsNeverEarly();
+
 private:
+    static PlayerStatus playingTrack(const QString &title, double elapsed, double duration)
+    {
+        PlayerStatus status;
+        status.valid = true;
+        status.mode = PlayerStatus::Mode::Playing;
+        status.elapsed = elapsed;
+        status.duration = duration;
+        status.volume = 50;
+        status.title = title;
+        status.artist = QStringLiteral("Bad Religion");
+        status.trackId = title;
+        return status;
+    }
+
     static PlayerStatus playing(double elapsed, double duration, int volume)
     {
         PlayerStatus status;
@@ -200,6 +219,77 @@ void TestPlaybackController::unknownPositionStaysUnknown()
     QCOMPARE(player.elapsed(), -1.0);
     QCOMPARE(player.duration(), -1.0);
     QVERIFY(!player.isSeekable());
+}
+
+// A 3:17 track moved on at about 2:30 with nothing asking it to, and afterwards
+// there was nothing to look at: the engine's account of itself goes to qCDebug,
+// which the default rules switch off, so the log file held two "starting" lines
+// and no more. These pin the report that replaced that silence.
+//
+// It reports, it does not diagnose. The app cannot tell a cut stream from a
+// short file from a server that moved on, and a log line that guesses sends the
+// next person the wrong way.
+
+void TestPlaybackController::aTrackThatStopsWellShortIsReported()
+{
+    LmsSession session;
+    PlaybackController player(&session);
+    QSignalSpy spy(&player, &PlaybackController::trackEndedEarly);
+
+    // The real numbers: American Jesus, 197.7 s long, gone at about 150.
+    Q_EMIT session.statusReceived(playingTrack(QStringLiteral("American Jesus"), 150.0, 197.7));
+    Q_EMIT session.statusReceived(playingTrack(QStringLiteral("AMOUR"), 0.0, 234.0));
+
+    QCOMPARE(spy.size(), 1);
+    QCOMPARE(spy.first().at(0).toString(), QStringLiteral("American Jesus"));
+    QVERIFY(qAbs(spy.first().at(1).toDouble() - 150.0) < 1.0);
+    QCOMPARE(spy.first().at(2).toDouble(), 197.7);
+}
+
+void TestPlaybackController::aNormalHandoverIsNotReported()
+{
+    LmsSession session;
+    PlaybackController player(&session);
+    QSignalSpy spy(&player, &PlaybackController::trackEndedEarly);
+
+    // The last snapshot before a hand-over is always a moment short of the
+    // end, because it was taken a moment before it. Reporting that would make
+    // the warning worthless by making it constant.
+    Q_EMIT session.statusReceived(playingTrack(QStringLiteral("American Jesus"), 196.0, 197.7));
+    Q_EMIT session.statusReceived(playingTrack(QStringLiteral("AMOUR"), 0.0, 234.0));
+
+    QCOMPARE(spy.size(), 0);
+}
+
+void TestPlaybackController::aSkipWeAskedForIsNotReported()
+{
+    LmsSession session;
+    PlaybackController player(&session);
+    QSignalSpy spy(&player, &PlaybackController::trackEndedEarly);
+
+    Q_EMIT session.statusReceived(playingTrack(QStringLiteral("American Jesus"), 20.0, 197.7));
+
+    // Pressing next ends a track early by definition. The session has no
+    // server so the command fails immediately, which does not matter: what is
+    // being recorded is that this app asked.
+    player.next();
+    Q_EMIT session.statusReceived(playingTrack(QStringLiteral("AMOUR"), 0.0, 234.0));
+
+    QCOMPARE(spy.size(), 0);
+}
+
+void TestPlaybackController::aTrackWithNoDurationIsNeverEarly()
+{
+    LmsSession session;
+    PlaybackController player(&session);
+    QSignalSpy spy(&player, &PlaybackController::trackEndedEarly);
+
+    // prd.md FR-2.5's rule applied to a complaint: a duration of -1 is "the
+    // server did not say", and an unknown must not be reported as a fault.
+    Q_EMIT session.statusReceived(playingTrack(QStringLiteral("Some Stream"), 30.0, -1.0));
+    Q_EMIT session.statusReceived(playingTrack(QStringLiteral("Another"), 0.0, 200.0));
+
+    QCOMPARE(spy.size(), 0);
 }
 
 QTEST_MAIN(TestPlaybackController)

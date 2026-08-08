@@ -291,6 +291,10 @@ ApplicationWindow {
 
                             Layout.fillWidth: true
                             height: theme.rowHeight
+                            // See Theme.qml's metrics: an ItemDelegate hides
+                            // 12 px of padding above and below its content.
+                            topPadding: 0
+                            bottomPadding: 0
                             Accessible.name: modelData.label
 
                             background: Rectangle {
@@ -329,6 +333,10 @@ ApplicationWindow {
                         id: settingsItem
                         Layout.fillWidth: true
                         height: theme.rowHeight
+                        // See Theme.qml's metrics: an ItemDelegate hides 12 px
+                        // of padding above and below its content.
+                        topPadding: 0
+                        bottomPadding: 0
                         Accessible.name: qsTr("Settings")
 
                         background: Rectangle {
@@ -359,6 +367,10 @@ ApplicationWindow {
                     ItemDelegate {
                         Layout.fillWidth: true
                         height: theme.rowHeight
+                        // See Theme.qml's metrics: an ItemDelegate hides 12 px
+                        // of padding above and below its content.
+                        topPadding: 0
+                        bottomPadding: 0
                         visible: !app.settings.railCollapsed
                         onClicked: app.settings.railCollapsed = true
                         contentItem: Label {

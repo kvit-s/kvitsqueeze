@@ -114,6 +114,13 @@ Item {
                 width: ListView.view.width
                 height: theme.trackHeight
 
+                // See Theme.qml's metrics: an ItemDelegate hides 12 px of
+                // padding above and below, which this row does not have to
+                // give. Without these two lines the artist line is drawn over
+                // the row below.
+                topPadding: 0
+                bottomPadding: 0
+
                 background: Rectangle {
                     color: row.isCurrent ? theme.surfaceOverlay
                          : row.hovered ? theme.surfaceHover : "transparent"

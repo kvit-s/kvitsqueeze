@@ -159,6 +159,10 @@ Item {
                     required property var modelData
                     Layout.fillWidth: true
                     height: theme.rowHeight
+                    // See Theme.qml's metrics: an ItemDelegate hides 12 px of
+                    // padding above and below its content.
+                    topPadding: 0
+                    bottomPadding: 0
                     text: modelData.name + "  ·  " + modelData.address
                           + ":" + modelData.port + "  ·  " + modelData.version
                     onClicked: {

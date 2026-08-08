@@ -65,6 +65,21 @@ AppContext::AppContext(const Options &options, QObject *parent)
         qCDebug(logEngine).noquote() << line;
     });
 
+    // A track that stopped early leaves nothing behind otherwise: the engine's
+    // own account of it is at debug level, which the default rules switch off,
+    // so the log file ends up with nothing to read. This one goes in at
+    // warning, where it survives the rules and is still there tomorrow.
+    connect(m_player, &PlaybackController::trackEndedEarly, this,
+            [this](const QString &title, double played, double duration) {
+                const QString message =
+                    tr("\"%1\" ended after %2 s of %3 s, and nothing asked it to")
+                        .arg(title)
+                        .arg(played, 0, 'f', 1)
+                        .arg(duration, 0, 'f', 1);
+                m_diagnostics->append(DiagnosticsModel::App, message);
+                qCWarning(logEngine).noquote() << message;
+            });
+
     // ── Settings changes reach the two things that care.
     connect(m_settings, &Settings::serverChanged, this, &AppContext::applyServerSettings);
 

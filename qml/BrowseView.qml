@@ -275,6 +275,11 @@ Item {
                     width: ListView.view.width
                     height: root.rowArtwork ? theme.trackHeight + 8 : theme.rowHeight
 
+                    // See Theme.qml's metrics: an ItemDelegate hides 12 px of
+                    // padding above and below its content.
+                    topPadding: 0
+                    bottomPadding: 0
+
                     Component.onCompleted: root.browseModel.ensureLoaded(index)
 
                     background: Rectangle {
