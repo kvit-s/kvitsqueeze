@@ -112,6 +112,12 @@ QtObject {
     readonly property string iconList:      String.fromCharCode(0xE8FD)
     readonly property string iconPin:       String.fromCharCode(0xE840)
     readonly property string iconSync:      String.fromCharCode(0xE895)
+    readonly property string iconFilter:    String.fromCharCode(0xE71C)
+
+    // The random mix borrows the shuffle glyph. It is the same idea — the order
+    // is not yours — and Segoe MDL2 has nothing closer. The two never appear as
+    // bare icons beside each other: the mix control always carries its name.
+    readonly property string iconMix:       String.fromCharCode(0xE8B1)
 
     // ── Formatting, kept with the theme because it is presentation.
     //

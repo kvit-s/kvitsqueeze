@@ -18,8 +18,10 @@
 #include "diagnosticsmodel.h"
 #include "enginecontroller.h"
 #include "librarycontroller.h"
+#include "mixgenremodel.h"
 #include "playbackcontroller.h"
 #include "queuemodel.h"
+#include "randommixcontroller.h"
 #include "searchmodel.h"
 #include "settings.h"
 
@@ -82,6 +84,25 @@ struct SettingsForeign
     QML_FOREIGN(Settings)
     QML_NAMED_ELEMENT(Settings)
     QML_UNCREATABLE("Settings is owned by AppContext")
+};
+
+// Registered for its enums as much as its properties: QML says Mix.Songs and
+// Mix.Active rather than carrying its own copy of the numbers, and Mix.Unknown
+// is the one that stops a three-state answer being written as a bool.
+struct RandomMixControllerForeign
+{
+    Q_GADGET
+    QML_FOREIGN(RandomMixController)
+    QML_NAMED_ELEMENT(Mix)
+    QML_UNCREATABLE("RandomMixController is owned by AppContext")
+};
+
+struct MixGenreModelForeign
+{
+    Q_GADGET
+    QML_FOREIGN(MixGenreModel)
+    QML_NAMED_ELEMENT(MixGenreModel)
+    QML_UNCREATABLE("Ask RandomMixController for its genre scope")
 };
 
 struct DiagnosticsModelForeign

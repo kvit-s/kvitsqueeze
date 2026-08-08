@@ -20,6 +20,7 @@ AppContext::AppContext(const Options &options, QObject *parent)
     m_player = new PlaybackController(m_session, this);
     m_queue = new QueueModel(m_session, this);
     m_library = new LibraryController(m_session, this);
+    m_mix = new RandomMixController(m_session, this);
     m_search = new SearchModel(m_session, this);
     m_artwork = new ArtworkCache(m_session, m_settings, this);
 
@@ -78,6 +79,19 @@ AppContext::AppContext(const Options &options, QObject *parent)
                         .arg(duration, 0, 'f', 1);
                 m_diagnostics->append(DiagnosticsModel::App, message);
                 qCWarning(logEngine).noquote() << message;
+            });
+
+    // A mix that stopped without this app asking has no other trace: the
+    // plugin ends itself quietly and the only visible symptom, minutes later,
+    // is a queue that ran out. Worth a line in the panel and the log so the
+    // question "why did it stop" has an answer to find (prd.md FR-3.9).
+    connect(m_mix, &RandomMixController::mixStoppedUnexpectedly, this,
+            [this](const QString &previous) {
+                const QString message =
+                    tr("%1 ended — something replaced the queue")
+                        .arg(previous.isEmpty() ? tr("The random mix") : previous);
+                m_diagnostics->append(DiagnosticsModel::App, message);
+                qCInfo(logSession).noquote() << message;
             });
 
     // ── Settings changes reach the two things that care.

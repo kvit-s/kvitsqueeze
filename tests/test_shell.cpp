@@ -91,6 +91,9 @@ void TestShell::theSqzModuleActuallyContainsItsTypes()
             readonly property int albums: Library.Albums
             readonly property int controlOut: Diagnostics.ControlOut
             readonly property int followSystem: Settings.FollowSystem
+            readonly property int mixSongs: Mix.Songs
+            readonly property int mixWorks: Mix.Works
+            readonly property int mixActive: Mix.Active
         }
     )qml", QUrl(QStringLiteral("qrc:/test/SqzTypes.qml")));
 
@@ -103,6 +106,14 @@ void TestShell::theSqzModuleActuallyContainsItsTypes()
     QCOMPARE(probe->property("controlOut").toInt(), 0);
     QVERIFY(probe->property("albums").toInt() > 0);
     QCOMPARE(probe->property("followSystem").toInt(), 0);
+
+    // Both of Mix's enums, because QML reads the mix through them: the type a
+    // button starts, and the three-state answer that must not be written as a
+    // bool. Mix.Unknown being 0 is what makes "not known" the default rather
+    // than something a binding has to remember to check for.
+    QCOMPARE(probe->property("mixSongs").toInt(), 0);
+    QCOMPARE(probe->property("mixWorks").toInt(), 4);
+    QCOMPARE(probe->property("mixActive").toInt(), 2);
 }
 
 void TestShell::mainQmlLoadsWithoutWarnings()
@@ -136,9 +147,9 @@ void TestShell::everyViewInstantiates()
     // three clicks away would not be noticed by the case above. Creating each
     // one directly is what makes this a check of the whole tree.
     //
-    // BrowseView, AlbumView and ArtistView are absent on purpose: they have
-    // required properties and are only meaningful with one. Main.qml's own
-    // Components cover that they compile.
+    // BrowseView, AlbumView, ArtistView and MixGenreDialog are absent on
+    // purpose: they have required properties and are only meaningful with one.
+    // Main.qml's own Components, and MixControl, cover that they compile.
     AppContext context({ false, false });
     ShellStub shell;
 
@@ -152,6 +163,7 @@ void TestShell::everyViewInstantiates()
         QStringLiteral("Theme"),           QStringLiteral("Artwork"),
         QStringLiteral("IconButton"),      QStringLiteral("SeekBar"),
         QStringLiteral("QueueMenu"),       QStringLiteral("MiniPlayer"),
+        QStringLiteral("MixControl"),      QStringLiteral("MixPanel"),
         QStringLiteral("NowPlayingView"),  QStringLiteral("QueueView"),
         QStringLiteral("SearchView"),      QStringLiteral("SettingsView"),
         QStringLiteral("DiagnosticsView"),

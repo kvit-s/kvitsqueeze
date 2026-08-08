@@ -20,6 +20,7 @@
 #include "clievent.h"
 #include "lmsrequest.h"
 #include "playerstatus.h"
+#include "randommix.h"
 
 #include <QDateTime>
 #include <QNetworkAccessManager>
@@ -90,6 +91,17 @@ public:
     void refreshStatus();
     void refreshQueue();
 
+    // Ask whether a random mix is running (prd.md FR-3.9).
+    //
+    // This one is a poll and cannot be anything else: the plugin changes its
+    // own state silently and emits nothing on the event stream, so there is no
+    // notification to subscribe to. It is called where a change is *likely* —
+    // on connect, and after anything that touched the queue, because starting
+    // a mix loads a queue and the plugin stops its own mix when it sees a
+    // load go past — and then on the heartbeat as the floor that catches a
+    // stop nobody else announced.
+    void refreshMixState();
+
     // The artwork URL for a cover id (prd.md §6.2). Kept here because it is
     // the same host and credentials as the control API.
     //
@@ -105,6 +117,12 @@ Q_SIGNALS:
     // may replace its contents with it. A plain statusReceived may carry a
     // one-track window and must not be mistaken for the whole queue.
     void queueReceived(const PlayerStatus &status);
+
+    // Emitted only when a reply actually came back, so a failed request leaves
+    // the last known answer standing rather than flapping the indicator. A
+    // connection that goes away is reported through stateChanged(), and that
+    // is what turns the mix state unknown.
+    void mixStateReceived(const RandomMix::State &state);
 
     void stateChanged(State state);
     void connectionError(const QString &message);
@@ -127,6 +145,7 @@ private:
     // burst of events costs one request rather than one each.
     QTimer *m_statusDebounce = nullptr;
     QTimer *m_queueDebounce = nullptr;
+    QTimer *m_mixDebounce = nullptr;
     QTimer *m_heartbeat = nullptr;
     QTimer *m_reconnect = nullptr;
 

@@ -94,7 +94,7 @@ void SqeezeAmpApplication::wireWindowsIntegration()
     PlaybackController *player = m_context->player();
 
     // ── Tray (prd.md FR-7.1) and background operation (FR-1.7).
-    m_tray = new TrayController(player, this);
+    m_tray = new TrayController(player, m_context->mix(), this);
     connect(m_tray, &TrayController::showRequested, this, &SqeezeAmpApplication::showWindow);
     connect(m_tray, &TrayController::hideRequested, this, &SqeezeAmpApplication::hideWindow);
     connect(m_tray, &TrayController::quitRequested, this, &SqeezeAmpApplication::quit);

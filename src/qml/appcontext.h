@@ -21,6 +21,7 @@
 #include "librarycontroller.h"
 #include "playbackcontroller.h"
 #include "queuemodel.h"
+#include "randommixcontroller.h"
 #include "searchmodel.h"
 #include "settings.h"
 
@@ -39,6 +40,7 @@ class AppContext : public QObject
     Q_PROPERTY(PlaybackController *player READ player CONSTANT)
     Q_PROPERTY(QueueModel *queue READ queue CONSTANT)
     Q_PROPERTY(LibraryController *library READ library CONSTANT)
+    Q_PROPERTY(RandomMixController *mix READ mix CONSTANT)
     Q_PROPERTY(SearchModel *search READ search CONSTANT)
     Q_PROPERTY(EngineController *engine READ engineController CONSTANT)
     Q_PROPERTY(DiagnosticsModel *diagnostics READ diagnostics CONSTANT)
@@ -74,6 +76,7 @@ public:
     PlaybackController *player() const { return m_player; }
     QueueModel *queue() const { return m_queue; }
     LibraryController *library() const { return m_library; }
+    RandomMixController *mix() const { return m_mix; }
     SearchModel *search() const { return m_search; }
     EngineController *engineController() const { return m_engineController; }
     DiagnosticsModel *diagnostics() const { return m_diagnostics; }
@@ -118,6 +121,7 @@ private:
     PlaybackController *m_player = nullptr;
     QueueModel *m_queue = nullptr;
     LibraryController *m_library = nullptr;
+    RandomMixController *m_mix = nullptr;
     SearchModel *m_search = nullptr;
     ArtworkCache *m_artwork = nullptr;
     DiagnosticsModel *m_diagnostics = nullptr;

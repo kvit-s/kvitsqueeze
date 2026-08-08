@@ -18,6 +18,11 @@ namespace {
 constexpr int kStatusDebounceMs = 60;
 constexpr int kQueueDebounceMs = 120;
 
+// Longer than the other two on purpose. The mix plugin decides whether to end
+// itself while handling the very command that triggered this refresh, so
+// asking too early answers about the state before that decision.
+constexpr int kMixDebounceMs = 250;
+
 // The event stream is authoritative in practice, so this is a safety net for
 // the case where it silently stops delivering rather than dropping. Cheap
 // enough at this interval to be invisible on a LAN.
@@ -41,6 +46,7 @@ LmsSession::LmsSession(QObject *parent)
     , m_cli(new LmsCliClient(this))
     , m_statusDebounce(new QTimer(this))
     , m_queueDebounce(new QTimer(this))
+    , m_mixDebounce(new QTimer(this))
     , m_heartbeat(new QTimer(this))
     , m_reconnect(new QTimer(this))
 {
@@ -48,6 +54,8 @@ LmsSession::LmsSession(QObject *parent)
     m_statusDebounce->setInterval(kStatusDebounceMs);
     m_queueDebounce->setSingleShot(true);
     m_queueDebounce->setInterval(kQueueDebounceMs);
+    m_mixDebounce->setSingleShot(true);
+    m_mixDebounce->setInterval(kMixDebounceMs);
     m_reconnect->setSingleShot(true);
     m_heartbeat->setInterval(kHeartbeatMs);
 
@@ -94,7 +102,24 @@ LmsSession::LmsSession(QObject *parent)
              });
     });
 
-    connect(m_heartbeat, &QTimer::timeout, this, &LmsSession::refreshStatus);
+    connect(m_mixDebounce, &QTimer::timeout, this, [this] {
+        post(playerId(), LmsCommand::randomMixActive(),
+             [this](const QJsonObject &result) {
+                 if (result.isEmpty())
+                     return;
+                 onReachable();
+                 Q_EMIT mixStateReceived(RandomMix::State::fromActiveResult(result));
+             });
+    });
+
+    connect(m_heartbeat, &QTimer::timeout, this, [this] {
+        refreshStatus();
+        // The floor under the mix indicator. A mix stopped from another
+        // controller changes nothing else observable — no queue edit, no
+        // transport change — so without this it would stay lit until the next
+        // time something unrelated happened.
+        refreshMixState();
+    });
 
     connect(m_reconnect, &QTimer::timeout, this, [this] {
         if (m_running)
@@ -108,6 +133,7 @@ LmsSession::LmsSession(QObject *parent)
         // moment of connecting has to be asked for.
         refreshStatus();
         refreshQueue();
+        refreshMixState();
     });
 
     connect(m_cli, &LmsCliClient::disconnected, this, [this](const QString &reason) {
@@ -209,6 +235,7 @@ void LmsSession::start()
     m_cli->start();
     refreshStatus();
     refreshQueue();
+    refreshMixState();
 }
 
 void LmsSession::stop()
@@ -230,6 +257,12 @@ void LmsSession::refreshQueue()
 {
     if (!m_host.isEmpty())
         m_queueDebounce->start();
+}
+
+void LmsSession::refreshMixState()
+{
+    if (!m_host.isEmpty())
+        m_mixDebounce->start();
 }
 
 void LmsSession::send(const QStringList &command, ResultHandler handler)
@@ -331,8 +364,14 @@ void LmsSession::handleEvent(const CliEvent &event)
     if (!event.playerId.isEmpty() && event.playerId != playerId())
         return;
 
-    if (event.affectsQueue())
+    if (event.affectsQueue()) {
         refreshQueue();
+
+        // Anything that rewrites the queue is also the shape of command the
+        // mix plugin ends itself on — a load, a clear, a play. The event does
+        // not say whether it did, so the only way to find out is to ask.
+        refreshMixState();
+    }
     if (event.affectsPlayerState())
         refreshStatus();
 }

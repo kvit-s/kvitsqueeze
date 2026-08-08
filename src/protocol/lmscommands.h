@@ -16,6 +16,8 @@
 // Verified against Lyrion Music Server 9.1.0 — see prd.md §14 items 1-3, all
 // three of which were checked before this file was written.
 
+#include "randommix.h"
+
 #include <QString>
 #include <QStringList>
 
@@ -92,6 +94,27 @@ QStringList playlists(int start, int count);
 QStringList playlistTracks(int start, int count, const QString &playlistId);
 QStringList musicFolder(int start, int count, const QString &folderId);
 QStringList search(int start, int count, const QString &term);
+
+// ── Random Mix (prd.md FR-3.9, the N4 exception — see randommix.h).
+//
+// Every one of these is a fixed verb with fixed arguments, exactly like
+// `rescan`. That is the whole reason this plugin is reachable and Dynamic
+// Playlists is not: there is no menu to walk and no descriptor to render.
+//
+// Starting a mix replaces the queue — the plugin loads rather than appends —
+// and the plugin ends its own mix when it sees a `clear`, `load`, `play` or
+// `playtracks` go past. A "play now" from the library is therefore a silent
+// stop, which the UI has to notice rather than assume.
+QStringList randomMixStart(RandomMix::Type type);
+QStringList randomMixStop();
+QStringList randomMixActive();
+
+// The genre scope is a server-side pref shared by every mix, not per-player
+// state, so it survives restarts and applies to the next mix as much as this
+// one.
+QStringList randomMixGenres(int start, int count);
+QStringList randomMixChooseGenre(const QString &genre, bool included);
+QStringList randomMixAllGenres(bool included);
 
 // ── Server scope (prd.md FR-9.3). Sent through LmsSession::sendServerScoped().
 // Count 0 asks for the server's own fields and no player list — SqeezeAmp has

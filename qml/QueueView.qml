@@ -41,6 +41,15 @@ Item {
                     }
                     Label {
                         text: {
+                            if (app.mix.active) {
+                                // Under a mix the total is meaningless — it is
+                                // the size of a window, not of what will play.
+                                // What is ahead is the number worth stating.
+                                var ahead = Math.max(0, app.queue.count
+                                                        - app.queue.currentIndex - 1)
+                                return app.mix.mixName + "  ·  "
+                                       + qsTr("%n track(s) ahead", "", ahead)
+                            }
                             if (app.queue.count === 0)
                                 return qsTr("Empty")
                             var text = qsTr("%n track(s)", "", app.queue.count)
@@ -55,8 +64,28 @@ Item {
                         color: theme.textMuted
                         font.pixelSize: theme.fontSmall
                     }
+
+                    // prd.md FR-3.9. Without this, twenty rows under a running
+                    // mix read as "the app truncated my queue" to anyone who
+                    // has ever seen a queue before.
+                    Label {
+                        Layout.fillWidth: true
+                        visible: app.mix.active
+                        wrapMode: Text.WordWrap
+                        text: qsTr("A mix keeps a moving window: played tracks "
+                                   + "drop off the top and fresh ones arrive at "
+                                   + "the bottom. This is not everything it will "
+                                   + "play.")
+                        color: theme.textFaint
+                        font.pixelSize: theme.fontSmall
+                    }
                 }
 
+                Button {
+                    text: qsTr("Stop the mix")
+                    visible: app.mix.active
+                    onClicked: app.mix.stop()
+                }
                 Button {
                     text: qsTr("Save as playlist…")
                     enabled: app.queue.count > 0
@@ -213,9 +242,18 @@ Item {
             Label {
                 anchors.centerIn: parent
                 visible: app.queue.count === 0
-                text: qsTr("The queue is empty.\nPlay something from the library.")
                 horizontalAlignment: Text.AlignHCenter
                 color: theme.textMuted
+
+                // An empty queue under a running mix is a gap, not a dead end.
+                // The plugin tops up on a ten-second timer after a track
+                // change, so skipping fast can outrun it — and "play something
+                // from the library" would be exactly the wrong advice, because
+                // doing that ends the mix.
+                text: app.mix.active
+                      ? qsTr("The mix is topping up.\nThis takes a few seconds "
+                             + "after a run of skips.")
+                      : qsTr("The queue is empty.\nPlay something from the library.")
             }
         }
     }

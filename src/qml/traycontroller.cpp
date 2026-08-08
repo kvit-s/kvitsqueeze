@@ -2,14 +2,17 @@
 
 #include "appicon.h"
 #include "playbackcontroller.h"
+#include "randommixcontroller.h"
 
 #include <QAction>
 #include <QMenu>
 #include <QSystemTrayIcon>
 
-TrayController::TrayController(PlaybackController *player, QObject *parent)
+TrayController::TrayController(PlaybackController *player, RandomMixController *mix,
+                               QObject *parent)
     : QObject(parent)
     , m_player(player)
+    , m_mix(mix)
     , m_tray(new QSystemTrayIcon(this))
     , m_menu(new QMenu)
 {
@@ -31,6 +34,20 @@ TrayController::TrayController(PlaybackController *player, QObject *parent)
 
     auto *stopAction = m_menu->addAction(tr("Stop"));
     connect(stopAction, &QAction::triggered, m_player, &PlaybackController::stop);
+
+    m_menu->addSeparator();
+
+    // prd.md FR-3.9. The label says what it does rather than asking: there is
+    // no window to put a question in when this menu is the whole interface,
+    // and a menu item that names its own consequence is better than a
+    // confirmation the tray cannot show properly anyway.
+    m_startMix = m_menu->addAction(tr("Start a Song Mix (replaces the queue)"));
+    connect(m_startMix, &QAction::triggered, this, [this] {
+        m_mix->start(RandomMixController::Songs);
+    });
+
+    m_stopMix = m_menu->addAction(tr("Stop the mix"));
+    connect(m_stopMix, &QAction::triggered, m_mix, &RandomMixController::stop);
 
     m_menu->addSeparator();
 
@@ -62,6 +79,18 @@ TrayController::TrayController(PlaybackController *player, QObject *parent)
 
     connect(m_player, &PlaybackController::stateChanged, this, &TrayController::refresh);
     connect(m_player, &PlaybackController::nowPlayingChanged, this, &TrayController::refresh);
+    connect(m_mix, &RandomMixController::mixChanged, this, &TrayController::refresh);
+
+    // A mix that stopped without being asked to is worth a balloon: with the
+    // window closed there is nothing else that could tell you, and the only
+    // other symptom arrives minutes later as a queue that ran out.
+    connect(m_mix, &RandomMixController::mixStoppedUnexpectedly, this,
+            [this](const QString &previous) {
+                notify(tr("SqeezeAmp"),
+                       tr("%1 ended because something replaced the queue.")
+                           .arg(previous.isEmpty() ? tr("The random mix") : previous));
+            });
+
     refresh();
 }
 
@@ -98,6 +127,14 @@ void TrayController::refresh()
     m_playPause->setText(m_player->isPlaying() ? tr("Pause") : tr("Play"));
     m_power->setText(m_player->isPowered() ? tr("Power off") : tr("Power on"));
 
+    // Enabled only when there is a mix to stop. Unknown is not "yes": offering
+    // a stop for a mix that may not exist invites the user to conclude the
+    // menu knows something it does not.
+    m_stopMix->setEnabled(m_mix->isActive());
+    m_startMix->setText(m_mix->isActive()
+                            ? tr("Roll a fresh Song Mix")
+                            : tr("Start a Song Mix (replaces the queue)"));
+
     QString tooltip = QStringLiteral("SqeezeAmp");
     if (!m_player->isPowered()) {
         tooltip += QStringLiteral("\n") + tr("Powered off");
@@ -108,6 +145,9 @@ void TrayController::refresh()
     } else {
         tooltip += QLatin1Char('\n') + tr("Nothing playing");
     }
+
+    if (m_mix->isActive())
+        tooltip += QLatin1Char('\n') + m_mix->mixName();
 
     m_tray->setToolTip(tooltip);
     m_tray->setIcon(AppIcon::application(!m_player->isPowered()));

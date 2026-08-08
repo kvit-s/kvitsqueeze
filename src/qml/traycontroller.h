@@ -15,6 +15,7 @@
 #include <QString>
 
 class PlaybackController;
+class RandomMixController;
 class QAction;
 class QMenu;
 class QSystemTrayIcon;
@@ -24,7 +25,12 @@ class TrayController : public QObject
     Q_OBJECT
 
 public:
-    TrayController(PlaybackController *player, QObject *parent = nullptr);
+    // The mix is here for the same reason the transport is: with the window
+    // closed this menu is the whole interface (prd.md FR-1.7), and somebody
+    // whose main use of the app is a random mix should not have to reopen a
+    // window to steer one.
+    TrayController(PlaybackController *player, RandomMixController *mix,
+                   QObject *parent = nullptr);
     ~TrayController() override;
 
     void show();
@@ -47,8 +53,11 @@ private:
     void refresh();
 
     PlaybackController *m_player = nullptr;
+    RandomMixController *m_mix = nullptr;
     QSystemTrayIcon *m_tray = nullptr;
     QMenu *m_menu = nullptr;
     QAction *m_playPause = nullptr;
     QAction *m_power = nullptr;
+    QAction *m_startMix = nullptr;
+    QAction *m_stopMix = nullptr;
 };

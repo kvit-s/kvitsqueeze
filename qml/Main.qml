@@ -114,6 +114,11 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+,";     onActivated: root.selectView("settings") }
     Shortcut { sequence: "Ctrl+U";     onActivated: root.selectView("queue") }
     Shortcut { sequence: "Ctrl+M";     onActivated: miniPlayer.visible = !miniPlayer.visible }
+
+    // prd.md FR-3.9: a mix listener's most-used action deserves a key.
+    // Ctrl+R starts a Song Mix; Ctrl+Shift+R stops whatever is running.
+    Shortcut { sequence: "Ctrl+R";       onActivated: mixControl.start(Mix.Songs) }
+    Shortcut { sequence: "Ctrl+Shift+R"; onActivated: mixControl.stop() }
     Shortcut {
         sequence: "Esc"
         onActivated: {
@@ -125,6 +130,10 @@ ApplicationWindow {
     }
 
     MiniPlayer { id: miniPlayer; visible: false }
+
+    // One instance at window level, so the bottom bar and the shortcut share
+    // the same menu and the same "replace the queue?" question.
+    MixControl { id: mixControl }
 
     // ── Page components. Instantiated by the stack, one per visit, so a
     // BrowseModel dies with the page that owns it.
@@ -519,6 +528,18 @@ ApplicationWindow {
                     active: !app.player.powered
                     tooltip: app.player.powered ? qsTr("Power off") : qsTr("Power on")
                     onClicked: app.player.togglePower()
+                }
+                // prd.md FR-3.9. In the bottom bar rather than the rail
+                // because a mix is something you reach for while listening,
+                // from whichever screen you happen to be on — and because the
+                // rail is the library's entry points, which a mix is not.
+                IconButton {
+                    glyph: theme.iconMix
+                    active: app.mix.active
+                    tooltip: app.mix.active
+                             ? qsTr("%1 is running").arg(app.mix.mixName)
+                             : qsTr("Random mix")
+                    onClicked: mixControl.openMenu()
                 }
                 IconButton {
                     glyph: theme.iconQueue

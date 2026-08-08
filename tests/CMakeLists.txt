@@ -28,6 +28,14 @@ sqz_add_test(BrowseReplyTests    test_browsereply.cpp    unit)
 sqz_add_test(CliEventTests       test_clievent.cpp       unit)
 sqz_add_test(PlayerIdentityTests test_playeridentity.cpp unit)
 
+# ── The Random Mix's wire format (prd.md FR-3.9).
+#
+# Two of these cases are the difference between an honest indicator and a
+# confident wrong one: a JSON null answer means "no mix", a missing answer
+# means "nobody knows", and the fixtures here are real replies from Lyrion
+# Music Server 9.1.0 so the distinction cannot be reasoned away.
+sqz_add_test(RandomMixTests      test_randommix.cpp      unit)
+
 # ── The single-player invariant, checked against the traffic.
 #
 # prd.md FR-6.1 says no request may escape with a foreign player id, and the
@@ -40,6 +48,15 @@ sqz_add_test(LmsSessionTests     test_lmssession.cpp     unit)
 # interpolated position. Drives PlaybackController against an unconfigured
 # session, so it opens nothing.
 sqz_add_test(PlaybackControllerTests test_playbackcontroller.cpp unit)
+
+# ── The mix a plugin can end without telling anyone (prd.md FR-3.9).
+#
+# The plugin emits no event when a mix starts or stops, and it stops its own
+# mix when it sees a load go past — including this app's own "play now". So
+# the state is polled, "unknown" is a state, and a mix that ended by itself
+# has to be noticed rather than announced. Drives the controller against an
+# unconfigured session, so it opens nothing.
+sqz_add_test(RandomMixControllerTests test_randommixcontroller.cpp unit)
 
 # ── Engine argument construction and log scraping.
 #

@@ -160,6 +160,14 @@ Item {
             }
         }
 
+        // ── The random mix (prd.md FR-3.9). It sits above "up next" because
+        // for a mix listener those two lines are the same sentence: what is
+        // filling the queue, and what it filled it with.
+        MixPanel {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
+        }
+
         // ── Up next.
         RowLayout {
             Layout.alignment: Qt.AlignHCenter

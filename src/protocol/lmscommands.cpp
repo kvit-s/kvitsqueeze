@@ -156,6 +156,41 @@ QStringList playlistSaveAs(const QString &name)
     return { QStringLiteral("playlist"), QStringLiteral("save"), name };
 }
 
+QStringList randomMixStart(RandomMix::Type type)
+{
+    return { QStringLiteral("randomplay"), RandomMix::token(type) };
+}
+
+QStringList randomMixStop()
+{
+    return { QStringLiteral("randomplay"), QStringLiteral("disable") };
+}
+
+QStringList randomMixActive()
+{
+    return { QStringLiteral("randomplayisactive") };
+}
+
+QStringList randomMixGenres(int start, int count)
+{
+    return { QStringLiteral("randomplaygenrelist"),
+             QString::number(start), QString::number(count) };
+}
+
+QStringList randomMixChooseGenre(const QString &genre, bool included)
+{
+    // The genre travels as its own name, not an id — the plugin keys its
+    // exclusion pref on the string LMS shows.
+    return { QStringLiteral("randomplaychoosegenre"), genre,
+             included ? QStringLiteral("1") : QStringLiteral("0") };
+}
+
+QStringList randomMixAllGenres(bool included)
+{
+    return { QStringLiteral("randomplaygenreselectall"),
+             included ? QStringLiteral("1") : QStringLiteral("0") };
+}
+
 QStringList artists(int start, int count, const QStringList &filters)
 {
     return window(QStringLiteral("artists"), start, count, filters);
