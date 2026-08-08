@@ -117,15 +117,45 @@ across restarts — so its queue and per-player settings survive on the server.
 
 ```
 sqeezeamp.exe --minimized     start hidden in the system tray
+
+sqeezeamp.exe --play-pause    hand a transport command to the running copy
+sqeezeamp.exe --next          and exit; does nothing if none is running
+sqeezeamp.exe --previous
+sqeezeamp.exe --stop
 ```
 
-That is the only flag worth typing, and it is what the "Start with Windows"
-setting writes into the Run key. `--help` and `--version` are accepted but
-answer in a **message box** rather than on stdout: this is a GUI-subsystem
-binary with no console attached, so Qt has nowhere else to put them.
+`--minimized` is what the "Start with Windows" setting writes into the Run key.
+`--help` and `--version` are accepted but answer in a **message box** rather
+than on stdout: this is a GUI-subsystem binary with no console attached, so Qt
+has nowhere else to put them.
 
 A second launch does not start a second copy: it raises the window of the one
-already running and exits.
+already running and exits. The transport flags use that same mechanism — see
+*Driving it from a script* below.
+
+### Driving it from a script
+
+For a keyboard whose keys can be remapped but which has no media keys — a
+Microsoft Sculpt, say — a remapped key can run `sqeezeamp.exe --next`.
+
+Launching a process per keypress costs a few hundred milliseconds of Qt
+start-up, so `tools/sqz-remote.au3` talks to the running app directly instead:
+
+```
+sqz-remote.au3 next          also: previous, playpause, stop, activate
+```
+
+Both routes end at the same place — the single-instance named pipe,
+`\\.\pipe\SqeezeAmp-instance-<username>`, which accepts those five verbs and
+ignores everything else. It is the app's only listening endpoint and it is
+**not** a socket, which is what keeps the no-remote-control rule (prd.md N7)
+intact. Two consequences worth knowing:
+
+- The pipe is per-user, so anything running as you can send a verb. That is the
+  same trust boundary as you pressing a media key, and it is the whole of the
+  surface: verbs only, nothing readable, no player id, no queries.
+- It reaches **this** app specifically. Unlike a media key, which whichever
+  player grabbed the hotkey first will answer, this cannot go to the wrong one.
 
 ### Keyboard
 

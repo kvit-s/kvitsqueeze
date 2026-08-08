@@ -5,6 +5,7 @@
 // any wiring out of here.
 
 #include "applog.h"
+#include "singleinstance.h"
 #include "sqeezeampapplication.h"
 
 // QApplication rather than QGuiApplication: QSystemTrayIcon lives in Widgets
@@ -35,11 +36,43 @@ int main(int argc, char *argv[])
     const QCommandLineOption minimized(QStringLiteral("minimized"),
                                        QStringLiteral("Start hidden in the system tray."));
     parser.addOption(minimized);
+
+    // Transport verbs (prd.md FR-7.10). Each one hands the command to the
+    // running instance over the single-instance pipe and exits — the scriptable
+    // route for a remapped keyboard key, without the app listening anywhere it
+    // is not already listening (prd.md N7).
+    const struct { QCommandLineOption option; SingleInstance::Command command; } verbs[] = {
+        { { QStringLiteral("play-pause"), QStringLiteral("Toggle play/pause and exit.") },
+          SingleInstance::Command::PlayPause },
+        { { QStringLiteral("next"), QStringLiteral("Skip to the next track and exit.") },
+          SingleInstance::Command::Next },
+        { { QStringLiteral("previous"), QStringLiteral("Skip to the previous track and exit.") },
+          SingleInstance::Command::Previous },
+        { { QStringLiteral("stop"), QStringLiteral("Stop playback and exit.") },
+          SingleInstance::Command::Stop },
+    };
+    for (const auto &verb : verbs)
+        parser.addOption(verb.option);
+
     parser.process(app);
 
+    SingleInstance::Command requested = SingleInstance::Command::Activate;
+    for (const auto &verb : verbs) {
+        if (parser.isSet(verb.option))
+            requested = verb.command;
+    }
+
     SqeezeAmpApplication sqeezeamp;
-    if (!sqeezeamp.claimSingleInstance())
-        return 0; // the running instance was asked to show itself
+    if (!sqeezeamp.claimSingleInstance(requested))
+        return 0; // the running instance took the command
+
+    // Nobody was there to take it. Starting the player because somebody asked
+    // it to skip a track would be a surprise — the key was pressed to change
+    // what is playing, not to begin playing.
+    if (requested != SingleInstance::Command::Activate) {
+        qWarning("SqeezeAmp is not running; nothing to command.");
+        return 1;
+    }
 
     if (!sqeezeamp.load(parser.isSet(minimized)))
         return 1;

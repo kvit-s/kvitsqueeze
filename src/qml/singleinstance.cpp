@@ -16,8 +16,11 @@ QString instanceName()
            + QString::fromLocal8Bit(qgetenv("USERNAME")).toLower();
 }
 
-constexpr const char *kActivate = "activate";
 constexpr int kConnectTimeoutMs = 500;
+
+// A message is a verb and nothing else, so a sane upper bound on how much a
+// client may send before it is ignored costs nothing and bounds the buffer.
+constexpr int kMaxMessageBytes = 64;
 
 } // namespace
 
@@ -29,8 +32,21 @@ SingleInstance::SingleInstance(QObject *parent)
     connect(m_server, &QLocalServer::newConnection, this, [this] {
         while (QLocalSocket *client = m_server->nextPendingConnection()) {
             connect(client, &QLocalSocket::readyRead, client, [this, client] {
-                if (client->readAll().startsWith(kActivate))
+                const Command command = parseCommand(client->read(kMaxMessageBytes));
+                switch (command) {
+                case Command::Activate:
                     Q_EMIT activationRequested();
+                    break;
+                case Command::Unknown:
+                    // Silently ignored on purpose. The pipe is reachable by
+                    // anything running as this user, and an unknown verb is far
+                    // more likely to be a typo in somebody's script than
+                    // something worth a dialog in front of the music.
+                    break;
+                default:
+                    Q_EMIT commandReceived(command);
+                    break;
+                }
                 client->disconnectFromServer();
             });
             connect(client, &QLocalSocket::disconnected, client, &QObject::deleteLater);
@@ -38,14 +54,53 @@ SingleInstance::SingleInstance(QObject *parent)
     });
 }
 
-bool SingleInstance::claim()
+SingleInstance::Command SingleInstance::parseCommand(const QByteArray &raw)
+{
+    // Truncate at the first NUL before trimming: QByteArray::trimmed() strips
+    // ASCII whitespace and nothing else, and a client that sizes its buffer for
+    // the terminator and writes the lot is the normal shape of a C or scripting
+    // caller — not something to answer with silence.
+    QByteArray verb = raw;
+    if (const qsizetype nul = verb.indexOf('\0'); nul >= 0)
+        verb.truncate(nul);
+
+    verb = verb.trimmed().toLower();
+
+    if (verb == "activate")
+        return Command::Activate;
+    if (verb == "playpause" || verb == "play-pause")
+        return Command::PlayPause;
+    if (verb == "next")
+        return Command::Next;
+    if (verb == "previous" || verb == "prev")
+        return Command::Previous;
+    if (verb == "stop")
+        return Command::Stop;
+
+    return Command::Unknown;
+}
+
+QByteArray SingleInstance::encodeCommand(Command command)
+{
+    switch (command) {
+    case Command::Activate:  return QByteArrayLiteral("activate");
+    case Command::PlayPause: return QByteArrayLiteral("playpause");
+    case Command::Next:      return QByteArrayLiteral("next");
+    case Command::Previous:  return QByteArrayLiteral("previous");
+    case Command::Stop:      return QByteArrayLiteral("stop");
+    case Command::Unknown:   break;
+    }
+    return {};
+}
+
+bool SingleInstance::claim(Command commandIfRunning)
 {
     // Is somebody already there? Connecting is also how the running instance
-    // is told to show itself, so the two questions are one round trip.
+    // is told to act, so the two questions are one round trip.
     QLocalSocket probe;
     probe.connectToServer(m_name);
     if (probe.waitForConnected(kConnectTimeoutMs)) {
-        probe.write(kActivate);
+        probe.write(encodeCommand(commandIfRunning));
         probe.waitForBytesWritten(kConnectTimeoutMs);
         probe.disconnectFromServer();
         return false;

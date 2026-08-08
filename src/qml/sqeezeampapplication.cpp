@@ -44,9 +44,9 @@ SqeezeAmpApplication::~SqeezeAmpApplication()
     saveWindowState();
 }
 
-bool SqeezeAmpApplication::claimSingleInstance()
+bool SqeezeAmpApplication::claimSingleInstance(SingleInstance::Command commandIfRunning)
 {
-    return m_instance->claim();
+    return m_instance->claim(commandIfRunning);
 }
 
 bool SqeezeAmpApplication::isTrayAvailable() const
@@ -110,6 +110,25 @@ void SqeezeAmpApplication::wireWindowsIntegration()
     connect(m_mediaKeys, &MediaKeys::previousPressed, player, &PlaybackController::previous);
     connect(m_mediaKeys, &MediaKeys::stopPressed, player, &PlaybackController::stop);
     Q_EMIT mediaKeysChanged();
+
+    // ── The same four verbs off the single-instance pipe (prd.md FR-7.10).
+    //
+    // Deliberately wired here, next to the media keys, and to the identical
+    // slots: a scripted key and a real media key must not be able to drift
+    // into meaning different things. This is the only place the pipe's
+    // vocabulary touches the player.
+    connect(m_instance, &SingleInstance::commandReceived, player,
+            [player](SingleInstance::Command command) {
+                switch (command) {
+                case SingleInstance::Command::PlayPause: player->playPause(); break;
+                case SingleInstance::Command::Next:      player->next();      break;
+                case SingleInstance::Command::Previous:  player->previous();  break;
+                case SingleInstance::Command::Stop:      player->stop();      break;
+                case SingleInstance::Command::Activate:
+                case SingleInstance::Command::Unknown:
+                    break;
+                }
+            });
 
     // ── System Media Transport Controls (prd.md FR-7.5, P1).
     m_smtc = new SystemMediaControls(this);

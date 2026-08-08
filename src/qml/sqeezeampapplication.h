@@ -9,6 +9,8 @@
 // and the window's own persistence. Each of those is its own class; this one
 // decides how they are wired to the player and to each other.
 
+#include "singleinstance.h"
+
 #include <QObject>
 #include <QQmlApplicationEngine>
 #include <QString>
@@ -16,7 +18,6 @@
 class AppContext;
 class MediaKeys;
 class QQuickWindow;
-class SingleInstance;
 class SystemMediaControls;
 class TaskbarButtons;
 class TrayController;
@@ -33,9 +34,12 @@ public:
     ~SqeezeAmpApplication() override;
 
     // Single instance (prd.md FR-7.3): returns false if another SqeezeAmp
-    // already holds the lock, after asking it to raise its window. Uses a
-    // named pipe — never a TCP port, not even on loopback (prd.md N7).
-    bool claimSingleInstance();
+    // already holds the lock, after sending it `commandIfRunning` — normally
+    // "raise your window", but a transport verb when this process was launched
+    // only to deliver one (prd.md FR-7.10). Uses a named pipe — never a TCP
+    // port, not even on loopback (prd.md N7).
+    bool claimSingleInstance(
+        SingleInstance::Command commandIfRunning = SingleInstance::Command::Activate);
 
     // Loads the shell and starts the player. Returns false if QML failed to
     // produce a window, which main() turns into a non-zero exit rather than a

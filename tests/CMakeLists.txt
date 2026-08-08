@@ -61,6 +61,14 @@ sqz_add_test(ShellTests test_shell.cpp shell)
 # wrong without looking wrong.
 sqz_add_test(TaskbarButtonsTests test_taskbarbuttons.cpp unit)
 
+# ── What the single-instance pipe will accept (prd.md FR-7.10).
+#
+# The pipe is the process's only listening endpoint and anything running as
+# this user can write to it, so the vocabulary is the security boundary.
+# parseCommand() is static and pure for exactly this reason; the pipe itself
+# needs a running app and stays a manual check.
+sqz_add_test(SingleInstanceTests test_singleinstance.cpp unit)
+
 # ── The one interaction that is worth real mouse events.
 #
 # ShellTests proves every view loads; it cannot prove a control does anything.
