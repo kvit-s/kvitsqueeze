@@ -1,5 +1,6 @@
 #include "appcontext.h"
 #include "artworkimageprovider.h"
+#include "sqeezeampapplication.h"
 
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
@@ -62,6 +63,11 @@ private slots:
 
 void TestShell::initTestCase()
 {
+    // The shipped app's backend, not the default one. Every view below is
+    // instantiated to see whether it warns, and an item the software renderer
+    // cannot draw warns only on the software renderer.
+    SqeezeAmpApplication::chooseSceneGraphBackend();
+
     QQuickStyle::setStyle(QStringLiteral("Basic"));
     QCoreApplication::setOrganizationName(QStringLiteral("SqeezeAmp"));
     // A separate application name keeps the test out of the developer's own

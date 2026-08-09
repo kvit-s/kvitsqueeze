@@ -30,6 +30,12 @@ class SqeezeAmpApplication : public QObject
     Q_PROPERTY(bool mediaKeysHeld READ mediaKeysHeld NOTIFY mediaKeysChanged)
 
 public:
+    // Picks the scene graph backend. Must run before the first QQuickWindow
+    // exists, and is static so the shell tests can adopt the same choice — a
+    // suite that renders on a different backend from the shipped app is not
+    // testing the shipped app's rendering.
+    static void chooseSceneGraphBackend();
+
     explicit SqeezeAmpApplication(QObject *parent = nullptr);
     ~SqeezeAmpApplication() override;
 

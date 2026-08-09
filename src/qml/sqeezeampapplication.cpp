@@ -14,6 +14,7 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QSGRendererInterface>
 #include <QScreen>
 
 namespace {
@@ -24,11 +25,41 @@ constexpr int kSmtcArtworkSize = 300;
 
 } // namespace
 
+void SqeezeAmpApplication::chooseSceneGraphBackend()
+{
+    // Qt Quick's software renderer, not the default D3D11 one.
+    //
+    // This shell is a 2D list-and-text application that spends most of its
+    // life small and behind something else. It has no ShaderEffect, no
+    // layer.effect and nothing from the graphical-effects set — every
+    // primitive it draws is one QPainter already renders — so the GPU path
+    // buys it nothing and costs it a graphics device, a driver, and the
+    // attention of anything watching for one. An overlay appearing over a
+    // music player is the visible half of that; the rest is a discrete GPU
+    // kept awake to fill a few rectangles.
+    //
+    // `ShellTests::mainQmlLoadsWithoutWarnings()` is what holds this honest:
+    // an unsupported item under the software backend warns rather than
+    // failing, so the test only means anything if it renders the same way.
+    //
+    // Spelled as a default rather than a rule. Qt's own environment variables
+    // are the escape hatch for a session that needs the GPU path back, and an
+    // explicit call here would silently outrank them.
+    if (qEnvironmentVariableIsSet("QT_QUICK_BACKEND")
+        || qEnvironmentVariableIsSet("QSG_RHI_BACKEND")) {
+        return;
+    }
+
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+}
+
 SqeezeAmpApplication::SqeezeAmpApplication(QObject *parent)
     : QObject(parent)
     , m_context(new AppContext({}, this))
     , m_instance(new SingleInstance(this))
 {
+    chooseSceneGraphBackend();
+
     // Basic rather than Fusion: the shell draws its own controls, and Basic
     // is the style that does not fight custom styling.
     QQuickStyle::setStyle(QStringLiteral("Basic"));
