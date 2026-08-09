@@ -42,6 +42,14 @@ SolidCompression=yes
 WizardStyle=modern
 ; Per-user by default: SqeezeAmp is a desktop music player, and nothing it does
 ; needs administrator rights. Start-with-Windows writes to HKCU (prd.md FR-7.6).
+;
+; PrivilegesRequired must say so explicitly — Inno defaults it to `admin`, which
+; would elevate, install into Program Files, and still write the Run key and the
+; cache paths under whichever account happened to accept the UAC prompt. That
+; mismatch is exactly what the compiler's UsedUserAreasWarning is about. With
+; `lowest`, {autopf} resolves to the per-user programs directory and every
+; per-user area below belongs to the user who is installing.
+PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible

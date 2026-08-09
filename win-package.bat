@@ -15,7 +15,21 @@ cd /d %~dp0
 
 set STAGE=build-windows-msvc-release\Release
 set DIST=dist
-set VERSION=0.1.0
+
+rem The version comes from CMakeLists.txt, which is where the binary gets it
+rem too — a second copy here would eventually name an artifact after a version
+rem the executable inside it does not report. SQZ_VERSION_FULL overrides it for
+rem a prerelease build, exactly as it does for the CMake configure.
+if defined SQZ_VERSION_FULL (
+    set VERSION=%SQZ_VERSION_FULL%
+) else (
+    for /f "tokens=3" %%v in ('findstr /r /c:"^project(sqeezeamp VERSION " CMakeLists.txt') do set VERSION=%%v
+)
+if not defined VERSION (
+    echo win-package: could not read the version from CMakeLists.txt
+    exit /b 1
+)
+
 rem Inno Setup installs per-user by default on a machine where the installer was
 rem not run elevated, so both locations are tried before giving up.
 set ISCC=%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe
@@ -41,17 +55,40 @@ if not exist "%STAGE%\engine\squeezelite.exe" (
 
 if not exist "%DIST%" mkdir "%DIST%"
 
+rem ── The tree both artifacts are built from.
+rem
+rem A copy of the staged tree under its release name, so the zip unpacks into
+rem one folder instead of emptying two hundred files into whatever directory it
+rem was opened in. The installer is compiled from this same copy, which is what
+rem makes "the zip and the setup contain the same bytes" a fact rather than an
+rem intention. robocopy reports success as any exit code below 8.
+set PKGNAME=SqeezeAmp-%VERSION%-windows-x64
+set PKGDIR=build-windows-msvc-release\%PKGNAME%
+robocopy "%STAGE%" "%PKGDIR%" /MIR /NJH /NJS /NFL /NDL >nul
+if errorlevel 8 (
+    echo win-package: could not assemble %PKGDIR%
+    exit /b 1
+)
+
 rem ── Portable zip.
-set ZIP=%DIST%\SqeezeAmp-%VERSION%-windows-x64-portable.zip
+rem
+rem Compress-Archive opens every staged file for read, and a DLL written moments
+rem ago can still be held briefly by real-time antivirus or the search indexer.
+rem That surfaces as an IOException part-way through the archive and clears in
+rem seconds, so it is retried rather than treated as a failure.
+set ZIP=%DIST%\%PKGNAME%.zip
 if exist "%ZIP%" del "%ZIP%"
-powershell -NoProfile -Command "Compress-Archive -Path '%STAGE%\*' -DestinationPath '%ZIP%' -CompressionLevel Optimal"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop'; for ($i=1; $i -le 5; $i++) { try { Compress-Archive -Path '%PKGDIR%' -DestinationPath '%ZIP%' -CompressionLevel Optimal -Force; break } catch { if ($i -eq 5) { throw }; Write-Host ('win-package: zip attempt ' + $i + ' failed, retrying'); Start-Sleep -Seconds 3 } }"
 if errorlevel 1 (
     echo win-package: could not build the portable zip
     exit /b 1
 )
 echo win-package: %ZIP%
 
-if "%1"=="zip" exit /b 0
+if "%1"=="zip" (
+    call :checksums
+    exit /b 0
+)
 
 rem ── Installer.
 if not exist "%ISCC%" (
@@ -60,10 +97,18 @@ if not exist "%ISCC%" (
     exit /b 0
 )
 
-"%ISCC%" /DAppVersion=%VERSION% "/DStageDir=%CD%\%STAGE%" packaging\windows\sqeezeamp.iss
+"%ISCC%" /DAppVersion=%VERSION% "/DStageDir=%CD%\%PKGDIR%" packaging\windows\sqeezeamp.iss
 if errorlevel 1 (
     echo win-package: Inno Setup failed
     exit /b 1
 )
 echo win-package: %DIST%\SqeezeAmp-%VERSION%-setup.exe
+
+call :checksums
 exit /b 0
+
+rem ── Checksums for everything in dist.
+:checksums
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\checksums.ps1 -DistDir "%DIST%"
+if errorlevel 1 echo win-package: could not write the checksums
+goto :eof

@@ -18,6 +18,17 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem ── The MSVC C runtime.
+rem
+rem windeployqt stages Qt and stops there. Without this the tree runs only on a
+rem machine that already has the runtime — which every build machine does, and a
+rem fresh one does not.
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\stage-crt.ps1 -StageDir "%STAGE%"
+if errorlevel 1 (
+    echo win-deploy: could not stage the MSVC C runtime
+    exit /b 1
+)
+
 rem ── The audio engine (prd.md §7.3.2).
 rem
 rem Stock squeezelite.exe, unmodified, launched as a child process. It is not
