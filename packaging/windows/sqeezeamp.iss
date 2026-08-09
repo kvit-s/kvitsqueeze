@@ -54,6 +54,11 @@ PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 LicenseFile={#StageDir}\licenses\LICENSE.squeezelite
+; The setup program's own icon, and the one shown in Apps & Features. The
+; shortcuts do not need it named: they point at sqeezeamp.exe, which carries the
+; same icon as a resource (packaging/windows/sqeezeamp.rc). Relative paths here
+; resolve against this script's directory.
+SetupIconFile=sqeezeamp.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
