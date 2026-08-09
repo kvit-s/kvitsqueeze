@@ -163,8 +163,8 @@ void TestShell::everyViewInstantiates()
         QStringLiteral("Theme"),           QStringLiteral("Artwork"),
         QStringLiteral("IconButton"),      QStringLiteral("SeekBar"),
         QStringLiteral("QueueMenu"),       QStringLiteral("MiniPlayer"),
-        QStringLiteral("MixControl"),      QStringLiteral("MixPanel"),
-        QStringLiteral("NowPlayingView"),  QStringLiteral("QueueView"),
+        QStringLiteral("MixControl"),      QStringLiteral("NowPlayingView"),
+        QStringLiteral("QueueView"),
         QStringLiteral("SearchView"),      QStringLiteral("SettingsView"),
         QStringLiteral("DiagnosticsView"),
     };

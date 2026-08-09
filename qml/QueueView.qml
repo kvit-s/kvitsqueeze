@@ -20,91 +20,99 @@ Item {
         anchors.fill: parent
         spacing: 0
 
+        // ── One narrow strip: what this is, one line of state, three icons.
+        //
+        // It used to be a three-line block with four worded buttons, which took
+        // 90-odd pixels off the top of a list whose whole job is to be a list.
+        // The words moved into tooltips; the state line moved onto one line;
+        // the mix's own explanation is now on hover, where a sentence a
+        // returning user has already read does not have to be re-read.
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: header.implicitHeight + theme.margin * 2
+            Layout.preferredHeight: theme.rowHeight + theme.spacing
             color: theme.surfaceRaised
 
             RowLayout {
                 id: header
                 anchors.fill: parent
-                anchors.margins: theme.margin
+                anchors.leftMargin: theme.margin
+                anchors.rightMargin: 4
                 spacing: theme.spacing
 
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 2
-                    Label {
-                        text: qsTr("Queue")
-                        color: theme.textPrimary
-                        font.pixelSize: theme.fontLarge
-                        font.bold: true
-                    }
-                    Label {
-                        text: {
-                            if (app.mix.active) {
-                                // Under a mix the total is meaningless — it is
-                                // the size of a window, not of what will play.
-                                // What is ahead is the number worth stating.
-                                var ahead = Math.max(0, app.queue.count
-                                                        - app.queue.currentIndex - 1)
-                                return app.mix.mixName + "  ·  "
-                                       + qsTr("%n track(s) ahead", "", ahead)
-                            }
-                            if (app.queue.count === 0)
-                                return qsTr("Empty")
-                            var text = qsTr("%n track(s)", "", app.queue.count)
-                            var total = theme.longDuration(app.queue.totalDuration)
-                            if (total)
-                                text += "  ·  " + total
-                            if (app.queue.truncated)
-                                text += "  ·  " + qsTr("showing the first %1")
-                                    .arg(app.queue.count)
-                            return text
-                        }
-                        color: theme.textMuted
-                        font.pixelSize: theme.fontSmall
-                    }
-
-                    // prd.md FR-3.9. Without this, twenty rows under a running
-                    // mix read as "the app truncated my queue" to anyone who
-                    // has ever seen a queue before.
-                    Label {
-                        Layout.fillWidth: true
-                        visible: app.mix.active
-                        wrapMode: Text.WordWrap
-                        text: qsTr("A mix keeps a moving window: played tracks "
-                                   + "drop off the top and fresh ones arrive at "
-                                   + "the bottom. This is not everything it will "
-                                   + "play.")
-                        color: theme.textFaint
-                        font.pixelSize: theme.fontSmall
-                    }
+                Label {
+                    text: qsTr("Queue")
+                    color: theme.textPrimary
+                    font.pixelSize: theme.fontNormal
+                    font.bold: true
                 }
 
-                // Both halves of this belong here rather than only on
-                // now-playing. Somebody whose listening *is* a random mix reads
-                // the queue, not the cover — and the first build shipped the
-                // start buttons on now-playing only, which meant the person the
-                // feature was built for never saw them.
-                Button {
-                    text: qsTr("Random mix…")
-                    visible: !app.mix.active
+                Label {
+                    id: state
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    color: theme.textMuted
+                    font.pixelSize: theme.fontSmall
+                    text: {
+                        if (app.mix.active) {
+                            // Under a mix the total is meaningless — it is the
+                            // size of a window, not of what will play. What is
+                            // ahead is the number worth stating.
+                            var ahead = Math.max(0, app.queue.count
+                                                    - app.queue.currentIndex - 1)
+                            return app.mix.mixName + "  ·  "
+                                   + qsTr("%n ahead", "", ahead)
+                                   + "  ·  " + qsTr("a moving window")
+                        }
+                        if (app.queue.count === 0)
+                            return qsTr("Empty")
+                        var text = qsTr("%n track(s)", "", app.queue.count)
+                        var total = theme.longDuration(app.queue.totalDuration)
+                        if (total)
+                            text += "  ·  " + total
+                        if (app.queue.truncated)
+                            text += "  ·  " + qsTr("showing the first %1")
+                                .arg(app.queue.count)
+                        return text
+                    }
+
+                    // prd.md FR-3.9.6. Three words on the line say *that* the
+                    // queue is a window; this says what that means, for the one
+                    // reading where twenty rows would otherwise look like the
+                    // app had truncated something.
+                    ToolTip.visible: stateHover.hovered && app.mix.active
+                    ToolTip.text: qsTr("A mix keeps a moving window: played "
+                                       + "tracks drop off the top and fresh "
+                                       + "ones arrive at the bottom. This is "
+                                       + "not everything it will play.")
+                    HoverHandler { id: stateHover }
+                }
+
+                // The mix belongs on this screen and not only on now-playing.
+                // Somebody whose listening *is* a random mix reads the queue,
+                // not the cover — the first build shipped the start buttons on
+                // now-playing only, which meant the person the feature was
+                // built for never saw them.
+                IconButton {
+                    glyph: theme.iconMix
+                    glyphSize: theme.fontNormal
+                    active: app.mix.active
+                    tooltip: app.mix.active
+                             ? qsTr("%1 is running").arg(app.mix.mixName)
+                             : qsTr("Random mix…")
                     onClicked: mixControl.openMenu()
                 }
-                Button {
-                    text: qsTr("Stop the mix")
-                    visible: app.mix.active
-                    onClicked: app.mix.stop()
-                }
-                Button {
-                    text: qsTr("Save as playlist…")
+                IconButton {
+                    glyph: theme.iconSave
+                    glyphSize: theme.fontNormal
                     enabled: app.queue.count > 0
+                    tooltip: qsTr("Save as playlist…")
                     onClicked: saveDialog.open()
                 }
-                Button {
-                    text: qsTr("Clear")
+                IconButton {
+                    glyph: theme.iconClear
+                    glyphSize: theme.fontNormal
                     enabled: app.queue.count > 0
+                    tooltip: qsTr("Clear the queue")
                     onClicked: app.queue.clear()
                 }
             }

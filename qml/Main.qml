@@ -21,8 +21,24 @@ ApplicationWindow {
 
     width: 1180
     height: 760
-    minimumWidth: 760
-    minimumHeight: 500
+
+    // Measured against the running app rather than reasoned about, by shrinking
+    // it until something broke — 760 × 500 was the figure from before the
+    // bottom bar was a bottom bar, and it had stopped being true.
+    //
+    //   * **Width** is set by the bottom bar, which is the only row that cannot
+    //     wrap or scroll. Below 540 the queue button on its right end starts
+    //     going under the window edge. That is with the title and the volume
+    //     slider already dropped at 980 and the cover thumbnail at 700.
+    //   * **Height** is set by the left rail, which is a fixed-length list with
+    //     no scroll: below about 400 the Settings entry at its foot is cut in
+    //     half by the seam. It cannot grow — prd.md N4 fixes the rail at these
+    //     ten destinations — so this number is stable rather than lucky.
+    //
+    // Both carry ~20 px over the measurement, because the measurement is of
+    // one font at one DPI.
+    minimumWidth: 560
+    minimumHeight: 420
     visible: true
     title: app.player.hasTrack
            ? app.player.title + " — " + app.player.artist + "  ·  SqeezeAmp"
@@ -248,47 +264,106 @@ ApplicationWindow {
                     anchors.margins: 6
                     spacing: 1
 
+                    // ── The collapse control sits above the search box rather
+                    // than at the foot of the rail. A chevron at the bottom of
+                    // a list of destinations reads as an eleventh destination;
+                    // one in the head reads as "this panel folds", which is
+                    // what it does. Right-aligned so it lands on the edge that
+                    // moves.
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: 0
 
-                        TextField {
-                            id: searchField
+                        Item {
                             Layout.fillWidth: true
                             visible: !app.settings.railCollapsed
-                            placeholderText: qsTr("Search…")
-                            text: app.search.term
-                            onTextEdited: {
-                                app.search.term = text
-                                if (text.length > 0)
-                                    root.selectView("search")
-                            }
                         }
 
                         IconButton {
-                            glyph: theme.iconSearch
-                            glyphSize: theme.fontNormal
-                            tooltip: qsTr("Collapse the sidebar")
-                            visible: app.settings.railCollapsed
-                            onClicked: {
-                                app.settings.railCollapsed = false
-                                searchField.forceActiveFocus()
-                            }
+                            glyph: app.settings.railCollapsed ? theme.chevronExpand
+                                                              : theme.chevronCollapse
+                            glyphFont: Qt.application.font.family
+                            glyphSize: theme.fontLarge
+                            baseColor: theme.textFaint
+                            tooltip: app.settings.railCollapsed ? qsTr("Expand the sidebar")
+                                                                : qsTr("Collapse the sidebar")
+                            onClicked: app.settings.railCollapsed = !app.settings.railCollapsed
+                        }
+                    }
+
+                    // ── Search. Rounded with the magnifier inside it, which is
+                    // what a search box looks like everywhere else — a bare
+                    // square TextField in the corner of a rail reads as a
+                    // filter for whatever is under it.
+                    TextField {
+                        id: searchField
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: theme.rowHeight
+                        visible: !app.settings.railCollapsed
+                        placeholderText: qsTr("Search")
+                        text: app.search.term
+                        leftPadding: theme.rowHeight
+                        rightPadding: theme.spacing
+                        topPadding: 0
+                        bottomPadding: 0
+                        verticalAlignment: TextInput.AlignVCenter
+                        color: theme.textPrimary
+                        placeholderTextColor: theme.textFaint
+                        font.pixelSize: theme.fontNormal
+
+                        background: Rectangle {
+                            radius: height / 2
+                            color: theme.surface
+                            border.width: 1
+                            border.color: searchField.activeFocus ? theme.accent
+                                                                  : theme.border
+                        }
+
+                        Label {
+                            x: theme.rowHeight / 2 - width / 2
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: theme.iconSearch
+                            font.family: theme.iconFont
+                            font.pixelSize: theme.fontNormal
+                            color: theme.textFaint
+                        }
+
+                        onTextEdited: {
+                            app.search.term = text
+                            if (text.length > 0)
+                                root.selectView("search")
+                        }
+                    }
+
+                    // Collapsed, the box becomes the thing it had inside it.
+                    IconButton {
+                        Layout.alignment: Qt.AlignHCenter
+                        glyph: theme.iconSearch
+                        glyphSize: theme.fontNormal
+                        tooltip: qsTr("Search")
+                        visible: app.settings.railCollapsed
+                        onClicked: {
+                            app.settings.railCollapsed = false
+                            searchField.forceActiveFocus()
                         }
                     }
 
                     Item { Layout.preferredHeight: theme.spacing }
 
                     Repeater {
+                        // One distinct glyph each — see Theme.qml on why these
+                        // were chosen by rendering the font. Collapsed, the
+                        // glyph is the whole control, so two entries sharing
+                        // one is two entries that cannot be told apart.
                         model: [
-                            { "id": "nowplaying", "label": qsTr("Now Playing"), "glyph": theme.iconMusic },
-                            { "id": "artists",    "label": qsTr("Artists"),     "glyph": theme.iconMusic },
-                            { "id": "albums",     "label": qsTr("Albums"),      "glyph": theme.iconGrid },
-                            { "id": "genres",     "label": qsTr("Genres"),      "glyph": theme.iconList },
-                            { "id": "years",      "label": qsTr("Years"),       "glyph": theme.iconList },
-                            { "id": "playlists",  "label": qsTr("Playlists"),   "glyph": theme.iconQueue },
+                            { "id": "nowplaying", "label": qsTr("Now Playing"), "glyph": theme.iconNowPlaying },
+                            { "id": "artists",    "label": qsTr("Artists"),     "glyph": theme.iconArtists },
+                            { "id": "albums",     "label": qsTr("Albums"),      "glyph": theme.iconAlbums },
+                            { "id": "genres",     "label": qsTr("Genres"),      "glyph": theme.iconGenres },
+                            { "id": "years",      "label": qsTr("Years"),       "glyph": theme.iconYears },
+                            { "id": "playlists",  "label": qsTr("Playlists"),   "glyph": theme.iconPlaylists },
                             { "id": "folders",    "label": qsTr("Folders"),     "glyph": theme.iconFolder },
-                            { "id": "new",        "label": qsTr("New Music"),   "glyph": theme.iconAdd },
+                            { "id": "new",        "label": qsTr("New Music"),   "glyph": theme.iconNew },
                             { "id": "random",     "label": qsTr("Random Album"), "glyph": theme.iconShuffle },
                             { "id": "queue",      "label": qsTr("Queue"),       "glyph": theme.iconQueue }
                         ]
@@ -306,6 +381,14 @@ ApplicationWindow {
                             bottomPadding: 0
                             Accessible.name: modelData.label
 
+                            // Collapsed, the label is gone and the glyph has to
+                            // carry the whole meaning — which no glyph does on
+                            // its own. Expanded, the name is already on screen
+                            // and a tooltip repeating it is noise.
+                            ToolTip.visible: railItem.hovered && app.settings.railCollapsed
+                            ToolTip.text: railItem.modelData.label
+                            ToolTip.delay: 400
+
                             background: Rectangle {
                                 radius: theme.radius
                                 color: railItem.current ? theme.surfaceOverlay
@@ -317,10 +400,11 @@ ApplicationWindow {
                                 Label {
                                     text: railItem.modelData.glyph
                                     font.family: theme.iconFont
-                                    font.pixelSize: theme.fontNormal
+                                    font.pixelSize: theme.fontLarge
                                     color: railItem.current ? theme.accent : theme.textMuted
-                                    Layout.preferredWidth: 18
+                                    Layout.preferredWidth: 22
                                     horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                                 Label {
                                     Layout.fillWidth: true
@@ -348,6 +432,10 @@ ApplicationWindow {
                         bottomPadding: 0
                         Accessible.name: qsTr("Settings")
 
+                        ToolTip.visible: settingsItem.hovered && app.settings.railCollapsed
+                        ToolTip.text: qsTr("Settings")
+                        ToolTip.delay: 400
+
                         background: Rectangle {
                             radius: theme.radius
                             color: root.currentView === "settings" ? theme.surfaceOverlay
@@ -358,9 +446,11 @@ ApplicationWindow {
                             Label {
                                 text: theme.iconSettings
                                 font.family: theme.iconFont
+                                font.pixelSize: theme.fontLarge
                                 color: theme.textMuted
-                                Layout.preferredWidth: 18
+                                Layout.preferredWidth: 22
                                 horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
                             }
                             Label {
                                 Layout.fillWidth: true
@@ -371,23 +461,6 @@ ApplicationWindow {
                             }
                         }
                         onClicked: root.selectView("settings")
-                    }
-
-                    ItemDelegate {
-                        Layout.fillWidth: true
-                        height: theme.rowHeight
-                        // See Theme.qml's metrics: an ItemDelegate hides 12 px
-                        // of padding above and below its content.
-                        topPadding: 0
-                        bottomPadding: 0
-                        visible: !app.settings.railCollapsed
-                        onClicked: app.settings.railCollapsed = true
-                        contentItem: Label {
-                            text: theme.iconBack
-                            font.family: theme.iconFont
-                            color: theme.textFaint
-                            horizontalAlignment: Text.AlignHCenter
-                        }
                     }
                 }
             }
@@ -428,10 +501,37 @@ ApplicationWindow {
             }
         }
 
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.border }
+        // ── The seam between the content pane and the bottom bar *is* the
+        // progress bar (prd.md FR-5.1/5.2). There is exactly one in the shell
+        // and this is it: a 1 px border was going to be drawn here regardless,
+        // and it spans the whole window, which makes it both the least
+        // intrusive place to put the position and the easiest to hit.
+        SeekBar {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 12
+        }
 
-        // ── Bottom bar: always visible, always this app's own playback.
+        // ── Bottom bar: always visible, always this app's own playback, and
+        // since the transport moved down here it is the only place several of
+        // these controls exist. That makes what it drops when the window is
+        // narrow a real decision rather than a cosmetic one.
+        //
+        // A RowLayout that runs out of room shrinks its `fillWidth` children
+        // first, and the seek bar is the only one of those — so at 890 px it
+        // went to zero width while a track title nobody needed kept its 200.
+        // Below `narrow` the two readouts that are duplicated elsewhere give
+        // way (the title, which the window title also carries; the volume
+        // slider, which Up/Down and the mute button cover) and the seek bar has
+        // a floor it cannot be pushed below.
         Rectangle {
+            id: bar
+            readonly property bool narrow: root.width < 980
+            // Second threshold. Below this the cover thumbnail goes too: it is
+            // the largest single item in the bar, it is decoration rather than
+            // a control, and the only thing it does — click for Now Playing —
+            // the rail also does.
+            readonly property bool tiny: root.width < 700
+
             Layout.fillWidth: true
             Layout.preferredHeight: theme.compact ? 58 : 72
             color: theme.surfaceRaised
@@ -445,15 +545,20 @@ ApplicationWindow {
                 Artwork {
                     Layout.preferredWidth: parent.height - 16
                     Layout.preferredHeight: parent.height - 16
+                    visible: !bar.tiny
                     coverId: app.player.coverId
                     requestSize: 150
 
                     TapHandler { onTapped: root.selectView("nowplaying") }
                 }
 
+                // First to go when the window is narrow, because the window
+                // title and the Now Playing screen both already say it.
                 ColumnLayout {
-                    Layout.preferredWidth: 220
-                    Layout.maximumWidth: 320
+                    Layout.preferredWidth: 200
+                    Layout.minimumWidth: 0
+                    Layout.maximumWidth: 300
+                    visible: !bar.narrow
                     spacing: 0
 
                     Label {
@@ -473,6 +578,26 @@ ApplicationWindow {
                     }
                 }
 
+                // Two equal-weight spacers around the transport, which is what
+                // centres it. Before the seek bar moved out to the seam it was
+                // the only `fillWidth` child and it absorbed all the slack; now
+                // nothing does, and without these the whole bar packs left and
+                // leaves a hole on the right.
+                Item { Layout.fillWidth: true }
+
+                // The whole transport lives here and nowhere else. Now Playing
+                // used to carry a second copy of it, one scroll away from this
+                // one and doing the same thing — so shuffle and repeat came
+                // down here with the rest rather than being left behind on a
+                // screen that no longer has controls.
+                IconButton {
+                    glyph: theme.iconShuffle
+                    active: app.player.shuffleMode !== 0
+                    tooltip: app.player.shuffleMode === 0 ? qsTr("Shuffle off")
+                           : app.player.shuffleMode === 1 ? qsTr("Shuffle songs")
+                                                          : qsTr("Shuffle albums")
+                    onClicked: app.player.cycleShuffle()
+                }
                 IconButton {
                     glyph: theme.iconPrevious
                     tooltip: qsTr("Previous")
@@ -489,22 +614,28 @@ ApplicationWindow {
                     tooltip: qsTr("Next")
                     onClicked: app.player.next()
                 }
-
-                Label {
-                    text: theme.duration(app.player.elapsed)
-                    color: theme.textMuted
-                    font.pixelSize: theme.fontSmall
-                    Layout.preferredWidth: 42
-                    horizontalAlignment: Text.AlignRight
+                IconButton {
+                    glyph: app.player.repeatMode === 1 ? theme.iconRepeatOne
+                                                       : theme.iconRepeatAll
+                    active: app.player.repeatMode !== 0
+                    tooltip: app.player.repeatMode === 0 ? qsTr("Repeat off")
+                           : app.player.repeatMode === 1 ? qsTr("Repeat one")
+                                                         : qsTr("Repeat all")
+                    onClicked: app.player.cycleRepeat()
                 }
 
-                SeekBar { Layout.fillWidth: true }
+                Item { Layout.fillWidth: true }
 
+                // The clocks stayed when the bar left. They are the one part of
+                // a progress readout that a line on the seam cannot draw, and
+                // they are directly under it.
                 Label {
-                    text: theme.duration(app.player.duration)
+                    text: theme.duration(app.player.elapsed) + "  /  "
+                          + theme.duration(app.player.duration)
                     color: theme.textMuted
                     font.pixelSize: theme.fontSmall
-                    Layout.preferredWidth: 42
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.preferredWidth: 92
                 }
 
                 // prd.md FR-2.6: server-side volume, so the level stays in step
@@ -516,6 +647,7 @@ ApplicationWindow {
                 }
                 Slider {
                     Layout.preferredWidth: theme.compact ? 80 : 110
+                    visible: !bar.narrow
                     from: 0
                     to: 100
                     value: Math.max(0, app.player.volume)
@@ -541,10 +673,17 @@ ApplicationWindow {
                              : qsTr("Random mix")
                     onClicked: mixControl.openMenu()
                 }
+                // A toggle, not a one-way door. Clicking Queue and then
+                // clicking it again to get back to the cover is what everyone
+                // tries first; without this the only way back is the rail,
+                // which is collapsed by default.
                 IconButton {
                     glyph: theme.iconQueue
-                    tooltip: qsTr("Queue")
-                    onClicked: root.selectView("queue")
+                    active: root.currentView === "queue"
+                    tooltip: root.currentView === "queue" ? qsTr("Back to Now Playing")
+                                                          : qsTr("Queue")
+                    onClicked: root.selectView(root.currentView === "queue"
+                                               ? "nowplaying" : "queue")
                 }
             }
         }

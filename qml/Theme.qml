@@ -106,18 +106,47 @@ QtObject {
     readonly property string iconPower:     String.fromCharCode(0xE7E8)
     readonly property string iconAdd:       String.fromCharCode(0xE710)
     readonly property string iconRemove:    String.fromCharCode(0xE74D)
-    readonly property string iconFolder:    String.fromCharCode(0xE8B7)
     readonly property string iconMusic:     String.fromCharCode(0xE8D6)
     readonly property string iconGrid:      String.fromCharCode(0xE8A9)
     readonly property string iconList:      String.fromCharCode(0xE8FD)
     readonly property string iconPin:       String.fromCharCode(0xE840)
     readonly property string iconSync:      String.fromCharCode(0xE895)
     readonly property string iconFilter:    String.fromCharCode(0xE71C)
+    readonly property string iconSave:      String.fromCharCode(0xE74E)
+    readonly property string iconClear:     String.fromCharCode(0xE894)
 
-    // The random mix borrows the shuffle glyph. It is the same idea — the order
-    // is not yours — and Segoe MDL2 has nothing closer. The two never appear as
-    // bare icons beside each other: the mix control always carries its name.
-    readonly property string iconMix:       String.fromCharCode(0xE8B1)
+    // ── The rail's ten destinations, one distinct glyph each.
+    //
+    // These were picked by *rendering the font* rather than from a code-point
+    // table, because the table is wrong often enough to matter and a wrong
+    // point in a symbol font does not fail — it draws something plausible. Two
+    // that had been taken on trust were wrong here: `iconFolder` was 0xE8B7,
+    // which is a document with a folded corner and not a folder at all, and
+    // half the rail shared two glyphs between them (Now Playing with Artists,
+    // and Genres/Years/Playlists/Queue all on 0xE8FD). Expanded that is merely
+    // untidy; collapsed to icons it is a column of six identical marks.
+    readonly property string iconNowPlaying: String.fromCharCode(0xE7F6) // headphones
+    readonly property string iconArtists:    String.fromCharCode(0xE902) // three people
+    readonly property string iconAlbums:     String.fromCharCode(0xE93C) // a disc
+    readonly property string iconGenres:     String.fromCharCode(0xE8EC) // a tag
+    readonly property string iconYears:      String.fromCharCode(0xE787) // a calendar
+    readonly property string iconPlaylists:  String.fromCharCode(0xE90B) // list of notes
+    readonly property string iconFolder:     String.fromCharCode(0xED25) // an open folder
+    readonly property string iconNew:        String.fromCharCode(0xE734) // a star
+
+    // The mix used to borrow the shuffle glyph, on the reasoning that the two
+    // never appeared as bare icons beside each other. They do now: the bottom
+    // bar carries shuffle, repeat and the mix, all three unlabelled. A lightning
+    // bolt is the nearest thing Segoe MDL2 has to "the server fills this for
+    // you", and it is at least not the glyph next to it.
+    readonly property string iconMix:       String.fromCharCode(0xE945)
+
+    // ── Chevrons for the rail's collapse control. Not from the icon font:
+    // Segoe MDL2 Assets is a symbol font and its coverage of ordinary Latin-1
+    // punctuation is not something to rely on. Rendered in the UI font, which
+    // is why IconButton has a `glyphFont` to point at it.
+    readonly property string chevronCollapse: "«"
+    readonly property string chevronExpand:   "»"
 
     // ── Formatting, kept with the theme because it is presentation.
     //

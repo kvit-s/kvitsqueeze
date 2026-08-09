@@ -209,7 +209,11 @@ bool Settings::compactDensity() const
 
 bool Settings::railCollapsed() const
 {
-    return m_settings.value(QLatin1String(kRail), false).toBool();
+    // Collapsed by default. The rail is a list of places in the library, and
+    // the app opens on Now Playing — so on a first run every one of its ten
+    // entries is somewhere the user is not going yet. The chevron and the
+    // search icon stay visible, which is the whole of what it costs.
+    return m_settings.value(QLatin1String(kRail), true).toBool();
 }
 
 bool Settings::albumGridView() const

@@ -12,6 +12,10 @@ AbstractButton {
 
     property string glyph
     property int glyphSize: theme.fontLarge
+    // Almost always the icon font. Overridden only where the glyph is ordinary
+    // text — the rail's «/» chevrons — because Segoe MDL2 Assets is a symbol
+    // font and what it draws for a Latin-1 code point is not worth betting on.
+    property string glyphFont: theme.iconFont
     property bool active: false          // drawn in the accent colour when on
     property color baseColor: theme.textPrimary
     property alias tooltip: hint.text
@@ -39,7 +43,7 @@ AbstractButton {
 
     contentItem: Text {
         text: root.glyph
-        font.family: theme.iconFont
+        font.family: root.glyphFont
         font.pixelSize: root.glyphSize
         color: !root.enabled ? theme.textFaint
                              : root.active ? theme.accent : root.baseColor

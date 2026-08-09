@@ -46,27 +46,58 @@ Item {
 
     Theme { id: theme }
 
+    // This menu is now the only place a mix is started. The now-playing screen
+    // used to carry the five types as buttons; it carried a second transport
+    // and the engine's format badge too, and all of it came off together when
+    // that screen went back to being a cover and a seek bar. So everything the
+    // panel said has to be sayable here: which mix is running (FR-3.9.4) and
+    // what it is scoped to (FR-3.9.8).
     Menu {
         id: menu
 
+        // The scope is a *server* pref shared with every other controller and
+        // it survives restarts, so a narrowing done weeks ago is still in force
+        // — unguessable from the mix itself, which just quietly plays less
+        // music. Reading it costs a request, so it is asked for when a menu
+        // that shows it opens rather than kept warm for one that never does.
+        onAboutToShow: app.mix.refreshGenres()
+
+        // Written out rather than generated: a Repeater's delegates need an
+        // Item to be parented to, and a Menu's contentItem is not one it will
+        // hand out. Five lines of duplication beats a menu that is empty at
+        // runtime and compiles clean.
+        //
+        // The running mix is ticked, so re-rolling it and starting a different
+        // one look different before the click rather than after it. Not a
+        // toggle: clicking the ticked one re-rolls it.
         MenuItem {
             text: qsTr("Song Mix")
+            checkable: true
+            checked: app.mix.active && app.mix.mixType === Mix.Songs
             onTriggered: root.start(Mix.Songs)
         }
         MenuItem {
             text: qsTr("Album Mix")
+            checkable: true
+            checked: app.mix.active && app.mix.mixType === Mix.Albums
             onTriggered: root.start(Mix.Albums)
         }
         MenuItem {
             text: qsTr("Artist Mix")
+            checkable: true
+            checked: app.mix.active && app.mix.mixType === Mix.Artists
             onTriggered: root.start(Mix.Artists)
         }
         MenuItem {
             text: qsTr("Year Mix")
+            checkable: true
+            checked: app.mix.active && app.mix.mixType === Mix.Years
             onTriggered: root.start(Mix.Years)
         }
         MenuItem {
             text: qsTr("Work Mix")
+            checkable: true
+            checked: app.mix.active && app.mix.mixType === Mix.Works
             onTriggered: root.start(Mix.Works)
         }
 
@@ -80,6 +111,17 @@ Item {
         MenuItem {
             text: qsTr("Choose genres…")
             onTriggered: root.openGenres()
+        }
+
+        // Shown only when the scope is narrowed. "Every genre" would be a line
+        // that is always there and never worth reading; this is the state that
+        // is actually worth interrupting for.
+        MenuItem {
+            text: app.mix.genreSummary
+            visible: app.mix.genres.loaded && app.mix.genres.narrowed
+            height: visible ? implicitHeight : 0
+            enabled: false
+            font.pixelSize: theme.fontSmall
         }
     }
 

@@ -15,7 +15,6 @@
         <file>qml/QueueMenu.qml</file>
         <file>qml/MiniPlayer.qml</file>
         <file>qml/MixControl.qml</file>
-        <file>qml/MixPanel.qml</file>
         <file>qml/MixGenreDialog.qml</file>
 
         <!-- Screens -->

@@ -4,19 +4,39 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Sqz
 
-// prd.md FR-5.1 / §9.2: large artwork, metadata, seek bar, transport, the
-// format badge, and an up-next strip.
+// prd.md FR-5.1 / §9.2: large artwork and title/artist/album. That list is the
+// whole screen, and it is shorter than it used to be on purpose.
 //
-// The format badge is the one place the engine's own state surfaces in the
-// main UI. Under Backend B most of it is scraped from squeezelite's log, so it
-// is often partial — and prd.md FR-2.5 is explicit that a field the backend
-// could not determine is *hidden*, not shown as zero. EngineController
-// assembles what it knows and this view draws whatever came out, including
-// nothing.
+// **This screen owns nothing that another one already has.** It once carried
+// its own transport row, its own mix panel, the engine's format badge and its
+// own full-width seek bar — every one of them a second copy of something the
+// bottom bar or the diagnostics screen already showed. Two progress bars sixty
+// pixels apart, both tracking the same track and both seekable, is not
+// redundancy that helps: it is two things to read where one would do, and the
+// pair drift the moment either is touched. The bottom bar is visible from
+// every screen, so a control here can only ever be a duplicate (prd.md §9.1).
+//
+// The position went to the seam between this pane and the bottom bar, where
+// `SeekBar` is now the divider. It is directly below this view and spans the
+// whole window, so nothing was lost by taking it off the cover.
+//
+// What is left is the cover, what is playing, and — beside the cover rather
+// than under it — what comes after.
 Item {
     id: root
 
     Theme { id: theme }
+
+    // The row after the current one, or null when there is none. Reads
+    // `app.queue.count` as well as the cursor so it re-evaluates when the queue
+    // is rebuilt under a mix, not only when the track changes.
+    readonly property var nextRow: {
+        const total = app.queue.count
+        const next = app.queue.currentIndex + 1
+        if (next <= 0 || next >= total)
+            return null
+        return app.queue.get(next)
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -26,29 +46,73 @@ Item {
         Item { Layout.fillHeight: true; Layout.preferredHeight: 1 }
 
         // The cover is the item that gives way when the window is short, and it
-        // has to be told so. A Layout child with `fillHeight: false` is pinned
-        // to its preferred size and will not shrink no matter how little room
-        // is left — the layout overflows its parent instead and the rows below
-        // are drawn under the bottom bar.
+        // has to be told so. A Layout child pinned to a preferred size will not
+        // shrink no matter how little room is left — the layout overflows its
+        // parent instead and the rows below are drawn under the bottom bar.
         //
-        // That is exactly what adding the mix panel exposed: the cover kept its
-        // 320 px and the mix buttons went off the bottom of the window. Every
-        // row under here is text and controls at their implicit height, so the
-        // cover is the only thing that *can* give, which makes it the only
-        // thing that should be flexible.
-        Artwork {
-            Layout.alignment: Qt.AlignHCenter
+        // So the cover's height is clamped to the space this Item was actually
+        // given, and its width follows its height. One-way: width follows
+        // height, height never follows width.
+        Item {
+            id: coverRow
+            Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: 96
-            Layout.maximumHeight: Math.min(root.width * 0.5, 460)
-            Layout.preferredHeight: Layout.maximumHeight
-            // Square, following the height the layout settled on. One-way:
-            // width follows height, height never follows width.
-            Layout.preferredWidth: height
-            Layout.minimumWidth: height
-            Layout.maximumWidth: height
-            coverId: app.player.coverId
-            requestSize: 600
+
+            // The gutter each side of a centred cover. `upNext` lives in the
+            // right one and hides when that gutter is too narrow to read in,
+            // which is what keeps the cover centred rather than nudged left.
+            readonly property real gutter: (width - cover.width) / 2
+
+            Artwork {
+                id: cover
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                height: Math.max(96, Math.min(parent.height,
+                                              Math.min(root.width * 0.42, 460)))
+                width: height
+                coverId: app.player.coverId
+                requestSize: 600
+            }
+
+            // ── Up next, beside the cover instead of under the seek bar. It is
+            // about a different track from everything in the centre column, and
+            // a line of it directly below the current track's own three lines
+            // read as a fourth line about the current track.
+            ColumnLayout {
+                id: upNext
+                anchors.left: cover.right
+                anchors.leftMargin: theme.margin * 1.5
+                anchors.top: cover.top
+                width: Math.max(0, Math.min(220, coverRow.gutter - theme.margin * 2))
+                spacing: 1
+                visible: root.nextRow !== null && coverRow.gutter >= 200
+
+                Label {
+                    text: qsTr("NEXT")
+                    color: theme.textFaint
+                    font.pixelSize: theme.fontSmall
+                    font.letterSpacing: 1.5
+                    bottomPadding: 4
+                }
+                Label {
+                    Layout.fillWidth: true
+                    text: root.nextRow ? root.nextRow.title : ""
+                    color: theme.textMuted
+                    font.pixelSize: theme.fontNormal
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                }
+                Label {
+                    Layout.fillWidth: true
+                    text: root.nextRow ? root.nextRow.artist : ""
+                    visible: text.length > 0
+                    color: theme.textFaint
+                    font.pixelSize: theme.fontSmall
+                    elide: Text.ElideRight
+                }
+            }
         }
 
         ColumnLayout {
@@ -85,135 +149,25 @@ Item {
             }
         }
 
-        // ── Seek bar with the two clocks around it.
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.maximumWidth: 720
-            Layout.alignment: Qt.AlignHCenter
-            spacing: theme.spacing
-
-            Label {
-                text: theme.duration(app.player.elapsed)
-                color: theme.textMuted
-                font.pixelSize: theme.fontSmall
-                Layout.preferredWidth: 46
-                horizontalAlignment: Text.AlignRight
-            }
-
-            SeekBar { Layout.fillWidth: true }
-
-            Label {
-                // Remaining rather than total: what is left is the number a
-                // listener actually looks at.
-                text: app.player.duration > 0
-                      ? "-" + theme.duration(Math.max(0, app.player.duration
-                                                          - app.player.elapsed))
-                      : "—"
-                color: theme.textMuted
-                font.pixelSize: theme.fontSmall
-                Layout.preferredWidth: 46
-            }
-        }
-
-        // ── Transport
+        // ── The passive sync indicator (prd.md FR-6.5). It survived the cull
+        // that took the format badge because it is not a readout: it says
+        // somebody else is steering this player, which changes what the buttons
+        // in the bottom bar will do. It is also absent almost always.
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: theme.spacing
-
-            IconButton {
-                glyph: theme.iconShuffle
-                active: app.player.shuffleMode !== 0
-                tooltip: app.player.shuffleMode === 0 ? qsTr("Shuffle off")
-                       : app.player.shuffleMode === 1 ? qsTr("Shuffle songs")
-                                                      : qsTr("Shuffle albums")
-                onClicked: app.player.cycleShuffle()
-            }
-            IconButton {
-                glyph: theme.iconPrevious
-                glyphSize: theme.fontLarge
-                tooltip: qsTr("Previous")
-                onClicked: app.player.previous()
-            }
-            IconButton {
-                glyph: app.player.playing ? theme.iconPause : theme.iconPlay
-                glyphSize: theme.fontHuge
-                tooltip: app.player.playing ? qsTr("Pause") : qsTr("Play")
-                onClicked: app.player.playPause()
-            }
-            IconButton {
-                glyph: theme.iconNext
-                glyphSize: theme.fontLarge
-                tooltip: qsTr("Next")
-                onClicked: app.player.next()
-            }
-            IconButton {
-                glyph: app.player.repeatMode === 1 ? theme.iconRepeatOne : theme.iconRepeatAll
-                active: app.player.repeatMode !== 0
-                tooltip: app.player.repeatMode === 0 ? qsTr("Repeat off")
-                       : app.player.repeatMode === 1 ? qsTr("Repeat one")
-                                                     : qsTr("Repeat all")
-                onClicked: app.player.cycleRepeat()
-            }
-        }
-
-        // ── Format badge and the passive sync indicator (prd.md FR-6.5).
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: theme.spacing
-            visible: app.engine.formatBadge.length > 0 || app.player.synced
+            visible: app.player.synced
+            spacing: 6
 
             Label {
-                text: app.engine.formatBadge
-                visible: text.length > 0
-                color: theme.textFaint
-                font.pixelSize: theme.fontSmall
-            }
-
-            Label {
-                visible: app.player.synced
-                text: theme.iconSync + "  " + qsTr("Synced by another controller")
+                text: theme.iconSync
                 font.family: theme.iconFont
-                color: theme.textFaint
                 font.pixelSize: theme.fontSmall
-            }
-        }
-
-        // ── The random mix (prd.md FR-3.9). It sits above "up next" because
-        // for a mix listener those two lines are the same sentence: what is
-        // filling the queue, and what it filled it with.
-        MixPanel {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.fillWidth: true
-        }
-
-        // ── Up next.
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.maximumWidth: 720
-            spacing: theme.spacing
-            visible: nextTitle.text.length > 0
-
-            Label {
-                text: qsTr("Up next")
                 color: theme.textFaint
-                font.pixelSize: theme.fontSmall
             }
             Label {
-                id: nextTitle
-                Layout.fillWidth: true
-                elide: Text.ElideRight
-                color: theme.textMuted
+                text: qsTr("Synced by another controller")
                 font.pixelSize: theme.fontSmall
-                text: {
-                    // Depends on count so it re-evaluates when the queue is
-                    // rebuilt as well as when the cursor moves.
-                    const total = app.queue.count
-                    const next = app.queue.currentIndex + 1
-                    if (next <= 0 || next >= total)
-                        return ""
-                    const row = app.queue.get(next)
-                    return row.artist ? row.title + " — " + row.artist : row.title
-                }
+                color: theme.textFaint
             }
         }
 
