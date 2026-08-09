@@ -25,6 +25,7 @@ private slots:
     void latencyWithoutExclusiveStillSpellsBothHalves();
     void resamplingIsOffUnlessAskedFor();
     void alwaysRaisesTheLogLevelsStatusIsScrapedFrom();
+    void theStreamBufferHoldsAWholeTrack();
 
     void parsesTheDeviceList();
     void deviceIdIsTheNameNotTheIndex();
@@ -128,6 +129,21 @@ void TestExternalEngine::alwaysRaisesTheLogLevelsStatusIsScrapedFrom()
     QVERIFY(args.contains(QStringLiteral("slimproto=info")));
     QVERIFY(args.contains(QStringLiteral("decode=info")));
     QVERIFY(args.contains(QStringLiteral("output=info")));
+}
+
+void TestExternalEngine::theStreamBufferHoldsAWholeTrack()
+{
+    // A track paused before its file has finished transferring leaves the
+    // audio connection open and idle, and an idle connection that gets reaped
+    // ends the track early — the server reads an empty buffer as "finished"
+    // and advances the queue. The buffer is sized so the transfer is over
+    // before a pause is physically possible, which is why this is not a
+    // tunable: a smaller value silently reopens that window.
+    const QStringList args = ExternalEngine::buildArguments(baseConfig());
+    const QString sizes = args.value(args.indexOf("-b") + 1);
+
+    QCOMPARE(sizes, QStringLiteral("32768:3763"));
+    QVERIFY(sizes.section(QLatin1Char(':'), 0, 0).toInt() * 1024 > 20 * 1000 * 1000);
 }
 
 void TestExternalEngine::parsesTheDeviceList()

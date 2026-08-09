@@ -21,6 +21,14 @@ constexpr int kRestartBackoffStartMs = 1000;
 constexpr int kRestartBackoffCapMs = 30000;
 constexpr int kFailuresBeforeGivingUp = 5;
 
+// squeezelite's -b, in KB. The stream half holds the encoded file as it
+// arrives and is raised well above the 2 MB default so a whole track lands
+// before anything can be paused; see buildArguments() for why that matters.
+// The output half is left at the stock value — it holds decoded audio, and
+// nothing here has any reason to second-guess it.
+constexpr int kStreamBufferKb = 32768;
+constexpr int kOutputBufferKb = 3763;
+
 // squeezelite names its decoders by a single character in the log. This is the
 // mapping upstream's own registration lines print at startup ("using mad to
 // decode mp3"), so an unknown character stays unknown rather than being
@@ -191,6 +199,25 @@ QStringList ExternalEngine::buildArguments(const EngineConfig &config)
     const QString recipe = resampleRecipe(config.resample);
     if (!recipe.isEmpty())
         args << QStringLiteral("-R") << recipe;
+
+    // A stream buffer big enough to swallow a whole track, which is a
+    // robustness setting rather than an audio one.
+    //
+    // The server pushes the encoded file down the audio connection and the
+    // player reads until its buffer is full. While the buffer has room the
+    // transfer completes in a second or two on a LAN and the server closes
+    // the connection — but a track paused before that leaves the connection
+    // open with nothing flowing, and an idle TCP connection can be reaped by
+    // anything on the path. The player then finds it dead on the next read,
+    // plays out what it has, reports the buffer empty, and the *server* reads
+    // that as "track finished" and advances the queue. A whole album's worth
+    // of tracks can only be paused safely if the file is already across.
+    //
+    // 32 MB covers any MP3 this library holds several times over; a file
+    // larger than the buffer is exposed for the stretch before its transfer
+    // finishes, and loses only the tail that did not fit.
+    args << QStringLiteral("-b")
+         << QStringLiteral("%1:%2").arg(kStreamBufferKb).arg(kOutputBufferKb);
 
     // Raised verbosity is not optional under this backend: it is the only
     // source FR-2.5 has. These four categories cover connection state, the
