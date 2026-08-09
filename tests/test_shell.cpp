@@ -58,6 +58,7 @@ private slots:
     void theSqzModuleActuallyContainsItsTypes();
     void mainQmlLoadsWithoutWarnings();
     void everyViewInstantiates();
+    void settingsIsTheWayIntoDiagnostics();
     void artworkProviderAnswersAnUnknownCover();
 };
 
@@ -185,6 +186,39 @@ void TestShell::everyViewInstantiates()
         QVERIFY2(!instance.isNull(),
                  qPrintable(view + QStringLiteral(": ") + component.errorString()));
     }
+}
+
+void TestShell::settingsIsTheWayIntoDiagnostics()
+{
+    // The case above proves DiagnosticsView *compiles*, which is exactly what
+    // it proved while nothing in the app could open it: Main.qml had the
+    // `selectView("diagnostics")` branch and no caller, so a finished screen
+    // sat unreachable and its ring buffer was the one place the evidence for
+    // D15 was already sitting. Instantiating is not reaching.
+    //
+    // Both halves of the route are covered: this drives the control, and
+    // mainQmlLoadsWithoutWarnings() fails on the other end, because a handler
+    // for a signal SettingsView does not declare is a load error rather than a
+    // silent no-op.
+    AppContext context({ false, false });
+    ShellStub shell;
+
+    QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty(QStringLiteral("app"), &context);
+    engine.rootContext()->setContextProperty(QStringLiteral("shell"), &shell);
+
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/qml/SettingsView.qml")));
+    QScopedPointer<QObject> view(component.create());
+    QVERIFY2(!view.isNull(), qPrintable(component.errorString()));
+
+    QObject *button = view->findChild<QObject *>(QStringLiteral("openDiagnosticsButton"));
+    QVERIFY2(button, "Settings offers no control that opens the diagnostics panel");
+
+    QSignalSpy opened(view.data(), SIGNAL(openDiagnostics()));
+    QVERIFY(opened.isValid());
+
+    QVERIFY(QMetaObject::invokeMethod(button, "clicked"));
+    QCOMPARE(opened.count(), 1);
 }
 
 void TestShell::artworkProviderAnswersAnUnknownCover()

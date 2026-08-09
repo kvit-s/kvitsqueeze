@@ -163,7 +163,9 @@ ApplicationWindow {
     }
     Component {
         id: settingsPage
-        SettingsView {}
+        SettingsView {
+            onOpenDiagnostics: root.selectView("diagnostics")
+        }
     }
     Component {
         id: diagnosticsPage

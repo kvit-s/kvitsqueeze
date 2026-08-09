@@ -14,6 +14,12 @@ import Sqz
 Item {
     id: root
 
+    // Diagnostics is a screen rather than a section: it is a live 2000-row ring
+    // buffer with its own pause and clear, and nesting that inside this
+    // Flickable would put a scroller inside a scroller. The section below is
+    // the way in, which is what §9.2 is actually asking for.
+    signal openDiagnostics()
+
     Theme { id: theme }
 
     component SectionHeader: Label {
@@ -378,6 +384,34 @@ Item {
                 text: qsTr("Scanning is the server's job. SqeezeAmp only asks it to "
                            + "start; tag editing and file management are not part of "
                            + "this application.")
+            }
+
+            // ── Diagnostics (prd.md FR-9.2, and §9.2's list of what Settings
+            // holds). The panel had been built in full and left with nothing
+            // routing to it — no rail entry, no button, no shortcut — so it had
+            // never been opened by anyone. See D17.
+            SectionHeader { text: qsTr("Diagnostics") }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: theme.spacing
+
+                Button {
+                    objectName: "openDiagnosticsButton"
+                    text: qsTr("Open diagnostics")
+                    onClicked: root.openDiagnostics()
+                }
+                Button {
+                    text: qsTr("Open log folder")
+                    onClicked: Qt.openUrlExternally("file:///" + app.logDirectory)
+                }
+            }
+
+            Hint {
+                text: qsTr("Every control message, every line the audio engine "
+                           + "prints, and what the engine could not determine — "
+                           + "shown as unknown rather than as zero. The copy "
+                           + "button there is what a bug report should carry.")
             }
 
             // ── About (prd.md §11.4 — the licences page)
