@@ -78,6 +78,14 @@ sqz_add_test(ShellTests test_shell.cpp shell)
 # wrong without looking wrong.
 sqz_add_test(TaskbarButtonsTests test_taskbarbuttons.cpp unit)
 
+# ── When an automatic pause is allowed to undo itself (prd.md FR-7.11).
+#
+# The watcher half needs a microphone and a person to talk into it. The policy
+# half is where the feature can be wrong without looking wrong — resuming over
+# a play the user pressed themselves, or letting a bar of music in between two
+# halves of one dictation — so it is a pure state machine and this drives it.
+sqz_add_test(MicPauseTests test_micpause.cpp unit)
+
 # ── What the single-instance pipe will accept (prd.md FR-7.10).
 #
 # The pipe is the process's only listening endpoint and anything running as

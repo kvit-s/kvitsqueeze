@@ -29,6 +29,9 @@ constexpr const char *kStartMinimized = "ui/startMinimized";
 constexpr const char *kLastView = "ui/lastView";
 constexpr const char *kGeometry = "window/geometry";
 
+constexpr const char *kMicPause = "mic/pauseWhileInUse";
+constexpr const char *kMicResumeDelay = "mic/resumeDelayMs";
+
 constexpr const char *kDiskCacheMb = "cache/artworkDiskMb";
 constexpr const char *kMemoryCacheMb = "cache/artworkMemoryMb";
 
@@ -240,6 +243,23 @@ QString Settings::lastView() const
     return m_settings.value(QLatin1String(kLastView), QStringLiteral("nowplaying")).toString();
 }
 
+bool Settings::pauseWhileMicInUse() const
+{
+    // Off by default. prd.md FR-7.11 is an option, and an application that
+    // stops the music by itself the first time somebody joins a call is a
+    // surprise however welcome the behaviour is once it is asked for.
+    return m_settings.value(QLatin1String(kMicPause), false).toBool();
+}
+
+int Settings::micResumeDelayMs() const
+{
+    // Three seconds, from measurement rather than taste: voice typing
+    // dismisses its own panel after a silence, and a user who pauses to think
+    // and presses Win+H again produced a close/open pair 3.1 s apart. Shorter
+    // than that and a bar of music arrives in the middle of a sentence.
+    return m_settings.value(QLatin1String(kMicResumeDelay), 3000).toInt();
+}
+
 bool Settings::startWithWindows() const
 {
     QSettings run(QLatin1String(kRunKey), QSettings::NativeFormat);
@@ -299,6 +319,22 @@ void Settings::setLastView(const QString &view)
     if (view == lastView() || view.isEmpty())
         return;
     m_settings.setValue(QLatin1String(kLastView), view);
+    Q_EMIT interfaceChanged();
+}
+
+void Settings::setPauseWhileMicInUse(bool enabled)
+{
+    if (enabled == pauseWhileMicInUse())
+        return;
+    m_settings.setValue(QLatin1String(kMicPause), enabled);
+    Q_EMIT interfaceChanged();
+}
+
+void Settings::setMicResumeDelayMs(int delayMs)
+{
+    if (delayMs == micResumeDelayMs())
+        return;
+    m_settings.setValue(QLatin1String(kMicResumeDelay), qBound(0, delayMs, 30000));
     Q_EMIT interfaceChanged();
 }
 

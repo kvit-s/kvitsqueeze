@@ -173,6 +173,8 @@ add_library(sqz-qml ${SQZ_LIB_TYPE}
     src/qml/appicon.cpp
     src/qml/artworkimageprovider.cpp
     src/qml/mediakeys.cpp
+    src/qml/micpausecontroller.cpp
+    src/qml/micwatcher.cpp
     src/qml/singleinstance.cpp
     src/qml/sqeezeampapplication.cpp
     src/qml/systemmediacontrols.cpp
@@ -199,6 +201,10 @@ if(WIN32)
     # The taskbar thumbnail toolbar (prd.md FR-7.7): ITaskbarList3 from ole32,
     # its icon strip from comctl32. Guarded by a header test in
     # taskbarbuttons.cpp for the same reason as the WinRT block above.
+    #
+    # ole32 also carries the Core Audio session enumeration MicWatcher reads
+    # (prd.md FR-7.11) — the capture endpoints and their per-process session
+    # state. Same header guard, in micwatcher.cpp.
     target_link_libraries(sqz-qml PRIVATE ole32 comctl32)
 endif()
 

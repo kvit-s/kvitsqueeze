@@ -45,6 +45,14 @@ class Settings : public QObject
     Q_PROPERTY(bool startMinimized READ startMinimized WRITE setStartMinimized NOTIFY interfaceChanged)
     Q_PROPERTY(QString lastView READ lastView WRITE setLastView NOTIFY interfaceChanged)
 
+    // prd.md FR-7.11. Under interfaceChanged rather than engineChanged on
+    // purpose: engineChanged restarts the audio engine, and a preference about
+    // when to pause has no business doing that.
+    Q_PROPERTY(bool pauseWhileMicInUse READ pauseWhileMicInUse WRITE setPauseWhileMicInUse
+                   NOTIFY interfaceChanged)
+    Q_PROPERTY(int micResumeDelayMs READ micResumeDelayMs WRITE setMicResumeDelayMs
+                   NOTIFY interfaceChanged)
+
 public:
     // prd.md §9.3. System follows the Windows setting, which is the default.
     enum Theme { FollowSystem = 0, Dark = 1, Light = 2 };
@@ -91,6 +99,8 @@ public:
     bool startWithWindows() const;
     bool startMinimized() const;
     QString lastView() const;
+    bool pauseWhileMicInUse() const;
+    int micResumeDelayMs() const;
 
     void setTheme(int theme);
     void setCompactDensity(bool compact);
@@ -100,6 +110,8 @@ public:
     void setStartWithWindows(bool enabled);
     void setStartMinimized(bool minimized);
     void setLastView(const QString &view);
+    void setPauseWhileMicInUse(bool enabled);
+    void setMicResumeDelayMs(int delayMs);
 
     // Window geometry, kept out of the property set because it is written on
     // every resize and nothing binds to it.

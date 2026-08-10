@@ -316,6 +316,60 @@ Item {
                            + "the keys back.")
             }
 
+            // ── Pause while the microphone is in use (prd.md FR-7.11)
+            //
+            // Under Interface rather than Player: it is a preference about
+            // when the app gets out of the way, not about how it plays.
+            CheckBox {
+                id: micPauseBox
+                objectName: "micPauseCheckBox"
+                enabled: shell.micWatchAvailable
+                text: qsTr("Pause while the microphone is in use")
+                checked: app.settings.pauseWhileMicInUse
+                onToggled: app.settings.pauseWhileMicInUse = checked
+            }
+
+            Hint {
+                visible: !shell.micWatchAvailable
+                text: qsTr("Unavailable: Windows is not reporting any recording "
+                           + "device on this machine.")
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: theme.margin
+                visible: micPauseBox.checked && shell.micWatchAvailable
+                spacing: theme.spacing
+
+                Label {
+                    text: qsTr("Wait before resuming")
+                    color: theme.textPrimary
+                }
+                SpinBox {
+                    from: 0
+                    to: 15000
+                    stepSize: 500
+                    editable: true
+                    value: app.settings.micResumeDelayMs
+                    onValueModified: app.settings.micResumeDelayMs = value
+
+                    // Seconds, because nobody thinks about this delay in
+                    // milliseconds. Stored in milliseconds so the setting does
+                    // not have to change shape if it ever needs finer steps.
+                    textFromValue: (value) => qsTr("%1 s").arg((value / 1000).toFixed(1))
+                    valueFromText: (text) => Math.round(parseFloat(text) * 1000)
+                }
+            }
+
+            Hint {
+                visible: micPauseBox.checked && shell.micWatchAvailable
+                text: qsTr("Any application that opens the microphone pauses "
+                           + "playback — Windows voice typing (Win+H), a call, a "
+                           + "meeting. Playback resumes after the wait above, and "
+                           + "only if nothing else has touched the player in the "
+                           + "meantime.")
+            }
+
             // ── Shortcuts (prd.md FR-8.1)
             SectionHeader { text: qsTr("Keyboard") }
 

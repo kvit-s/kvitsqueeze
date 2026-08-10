@@ -17,6 +17,7 @@
 
 class AppContext;
 class MediaKeys;
+class MicPauseController;
 class QQuickWindow;
 class SystemMediaControls;
 class TaskbarButtons;
@@ -28,6 +29,7 @@ class SqeezeAmpApplication : public QObject
 
     Q_PROPERTY(bool trayAvailable READ isTrayAvailable CONSTANT)
     Q_PROPERTY(bool mediaKeysHeld READ mediaKeysHeld NOTIFY mediaKeysChanged)
+    Q_PROPERTY(bool micWatchAvailable READ isMicWatchAvailable CONSTANT)
 
 public:
     // Picks the scene graph backend. Must run before the first QQuickWindow
@@ -61,6 +63,10 @@ public:
     // wonder why one key works and another does not.
     bool mediaKeysHeld() const { return m_mediaKeysHeld; }
 
+    // False when there are no capture endpoints to watch, which makes
+    // prd.md FR-7.11's option unavailable rather than merely off.
+    bool isMicWatchAvailable() const;
+
     Q_INVOKABLE void showWindow();
     Q_INVOKABLE void hideWindow();
     Q_INVOKABLE void quit();
@@ -85,6 +91,7 @@ private:
     SingleInstance *m_instance = nullptr;
     TrayController *m_tray = nullptr;
     MediaKeys *m_mediaKeys = nullptr;
+    MicPauseController *m_micPause = nullptr;
     SystemMediaControls *m_smtc = nullptr;
     TaskbarButtons *m_taskbarButtons = nullptr;
     QQmlApplicationEngine m_engine;

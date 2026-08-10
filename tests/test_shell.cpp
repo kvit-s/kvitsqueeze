@@ -35,10 +35,16 @@ class ShellStub : public QObject
     Q_OBJECT
     Q_PROPERTY(bool trayAvailable READ trayAvailable CONSTANT)
     Q_PROPERTY(bool mediaKeysHeld READ mediaKeysHeld CONSTANT)
+    Q_PROPERTY(bool micWatchAvailable READ micWatchAvailable CONSTANT)
 
 public:
     bool trayAvailable() const { return false; }
     bool mediaKeysHeld() const { return true; }
+
+    // True, so the FR-7.11 controls are instantiated in the state a user with
+    // a microphone sees. False would hide half of them behind a `visible`
+    // binding and quietly stop testing them.
+    bool micWatchAvailable() const { return true; }
 
     Q_INVOKABLE void showWindow() {}
     Q_INVOKABLE void hideWindow() {}
@@ -59,6 +65,7 @@ private slots:
     void mainQmlLoadsWithoutWarnings();
     void everyViewInstantiates();
     void settingsIsTheWayIntoDiagnostics();
+    void settingsCanTurnTheMicPauseOnAndOff();
     void artworkProviderAnswersAnUnknownCover();
 };
 
@@ -219,6 +226,44 @@ void TestShell::settingsIsTheWayIntoDiagnostics()
 
     QVERIFY(QMetaObject::invokeMethod(button, "clicked"));
     QCOMPARE(opened.count(), 1);
+}
+
+void TestShell::settingsCanTurnTheMicPauseOnAndOff()
+{
+    // prd.md FR-7.11's only way in. MicPauseTests covers what the feature
+    // decides; nothing else covers whether a user can reach it, and D17 is the
+    // entry in this project's log about a finished screen that nobody could
+    // open. The controller watches Settings and nothing else, so a switch that
+    // writes the setting is the whole of the wiring on this end.
+    AppContext context({ false, false });
+    ShellStub shell;
+
+    QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty(QStringLiteral("app"), &context);
+    engine.rootContext()->setContextProperty(QStringLiteral("shell"), &shell);
+
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/qml/SettingsView.qml")));
+    QScopedPointer<QObject> view(component.create());
+    QVERIFY2(!view.isNull(), qPrintable(component.errorString()));
+
+    QObject *box = view->findChild<QObject *>(QStringLiteral("micPauseCheckBox"));
+    QVERIFY2(box, "Settings offers no switch for pausing while the microphone is in use");
+    QVERIFY2(box->property("enabled").toBool(),
+             "The switch is disabled even though the shell reports a capture device");
+
+    const bool before = context.settings()->pauseWhileMicInUse();
+
+    box->setProperty("checked", true);
+    QVERIFY(QMetaObject::invokeMethod(box, "toggled"));
+    QVERIFY2(context.settings()->pauseWhileMicInUse(),
+             "Toggling the switch on did not reach the setting");
+
+    box->setProperty("checked", false);
+    QVERIFY(QMetaObject::invokeMethod(box, "toggled"));
+    QVERIFY2(!context.settings()->pauseWhileMicInUse(),
+             "Toggling the switch off did not reach the setting");
+
+    context.settings()->setPauseWhileMicInUse(before);
 }
 
 void TestShell::artworkProviderAnswersAnUnknownCover()

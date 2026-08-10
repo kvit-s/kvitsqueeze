@@ -5,6 +5,7 @@
 #include "artworkimageprovider.h"
 #include "lmssession.h"
 #include "mediakeys.h"
+#include "micpausecontroller.h"
 #include "singleinstance.h"
 #include "systemmediacontrols.h"
 #include "taskbarbuttons.h"
@@ -85,6 +86,11 @@ bool SqeezeAmpApplication::isTrayAvailable() const
     return m_tray && m_tray->isAvailable();
 }
 
+bool SqeezeAmpApplication::isMicWatchAvailable() const
+{
+    return m_micPause && m_micPause->isAvailable();
+}
+
 QQuickWindow *SqeezeAmpApplication::window() const
 {
     const QList<QObject *> roots = m_engine.rootObjects();
@@ -160,6 +166,15 @@ void SqeezeAmpApplication::wireWindowsIntegration()
                     break;
                 }
             });
+
+    // ── Pause while the microphone is in use (prd.md FR-7.11, P2).
+    //
+    // Constructed whatever the setting says, because it is the thing that
+    // reads the setting; nothing polls until the option is on. Note that it
+    // reaches the player through the same PlaybackController calls as every
+    // other route in this function — an automatic pause is an ordinary pause,
+    // and FR-1.6's reconciliation applies to it unchanged.
+    m_micPause = new MicPauseController(player, m_context->settings(), this);
 
     // ── System Media Transport Controls (prd.md FR-7.5, P1).
     m_smtc = new SystemMediaControls(this);
