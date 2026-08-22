@@ -27,6 +27,7 @@ constexpr const char *kAlbumGrid = "ui/albumGrid";
 constexpr const char *kCloseToTray = "ui/closeToTray";
 constexpr const char *kStartMinimized = "ui/startMinimized";
 constexpr const char *kLastView = "ui/lastView";
+constexpr const char *kLocalMusic = "library/localFolder";
 constexpr const char *kGeometry = "window/geometry";
 
 constexpr const char *kMicPause = "mic/pauseWhileInUse";
@@ -319,6 +320,23 @@ void Settings::setLastView(const QString &view)
     if (view == lastView() || view.isEmpty())
         return;
     m_settings.setValue(QLatin1String(kLastView), view);
+    Q_EMIT interfaceChanged();
+}
+
+QString Settings::localMusicFolder() const
+{
+    return m_settings.value(QLatin1String(kLocalMusic)).toString();
+}
+
+void Settings::setLocalMusicFolder(const QString &folder)
+{
+    // Trimmed rather than validated: a path that does not resolve is not an
+    // error to report here — the sidecar lookup simply finds nothing, which is
+    // the same state as a track that has no `.lrc` at all.
+    const QString trimmed = folder.trimmed();
+    if (trimmed == localMusicFolder())
+        return;
+    m_settings.setValue(QLatin1String(kLocalMusic), trimmed);
     Q_EMIT interfaceChanged();
 }
 

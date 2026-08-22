@@ -154,7 +154,9 @@ add_library(sqz-app ${SQZ_LIB_TYPE}
     src/app/diagnosticsmodel.cpp
     src/app/enginecontroller.cpp
     src/app/librarycontroller.cpp
+    src/app/lrcsheet.cpp
     src/app/lyricscontroller.cpp
+    src/app/lyricssidecar.cpp
     src/app/mixgenremodel.cpp
     src/app/playbackcontroller.cpp
     src/app/queuemodel.cpp

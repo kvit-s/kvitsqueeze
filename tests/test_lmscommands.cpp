@@ -140,13 +140,17 @@ void TestLmsCommands::serverStatusAsksForNoPlayerList()
 void TestLmsCommands::songInfoAsksForTheLyricTagAndNothingElse()
 {
     // `songinfo` returns one *field* per loop entry, so the window is over
-    // fields and not over tracks — and the tag letter for lyrics is `w`.
-    // A wrong letter here does not fail: it reads back as a library in which
-    // no file has any lyrics at all.
+    // fields and not over tracks. The tag letter for lyrics is `w`, and a wrong
+    // one here does not fail: it reads back as a library in which no file has
+    // any lyrics at all.
+    //
+    // `u` is the file's location, and it is not optional either — the server's
+    // lyrics are never timed, so the sidecar beside the track is the only
+    // sheet that can be followed and this is what locates it.
     QCOMPARE(LmsCommand::songInfo(QStringLiteral("10125")),
              (QStringList{ QStringLiteral("songinfo"), QStringLiteral("0"),
                            QStringLiteral("20"), QStringLiteral("track_id:10125"),
-                           QStringLiteral("tags:w") }));
+                           QStringLiteral("tags:uw") }));
 }
 
 QTEST_APPLESS_MAIN(TestLmsCommands)

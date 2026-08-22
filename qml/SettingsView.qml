@@ -440,6 +440,35 @@ Item {
                            + "this application.")
             }
 
+            // prd.md FR-5.5. The server serves the file's plain lyric tag and
+            // reads no `.lrc` beside it, so a sheet that can be followed line
+            // by line has to be read by this app — which needs to be told where
+            // the same music is visible from here. Optional: left empty, the
+            // pane still shows whatever the server has.
+            GridLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: theme.spacing
+                columns: 2
+                columnSpacing: theme.spacing
+                rowSpacing: theme.spacing
+
+                Label { text: qsTr("Music folder on this PC"); color: theme.textPrimary }
+                TextField {
+                    Layout.fillWidth: true
+                    text: app.settings.localMusicFolder
+                    placeholderText: qsTr("\\\\Server\\music  ·  optional")
+                    onEditingFinished: app.settings.localMusicFolder = text
+                }
+            }
+
+            Hint {
+                text: qsTr("Only used to find timed lyrics: a `.lrc` file named after "
+                           + "the track, next to it. The server's own path is matched "
+                           + "against this one from the end, so pointing at the music "
+                           + "root is enough. Nothing else is read from here and "
+                           + "nothing is written.")
+            }
+
             // ── Diagnostics (prd.md FR-9.2, and §9.2's list of what Settings
             // holds). The panel had been built in full and left with nothing
             // routing to it — no rail entry, no button, no shortcut — so it had

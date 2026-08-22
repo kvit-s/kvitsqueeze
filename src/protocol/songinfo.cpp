@@ -36,6 +36,8 @@ SongInfo SongInfo::fromResult(const QJsonObject &result)
                 info.trackId = idOrString(it.value());
             else if (it.key() == QLatin1String("title"))
                 info.title = it.value().toString();
+            else if (it.key() == QLatin1String("url"))
+                info.url = it.value().toString();
             else if (it.key() == QLatin1String("lyrics"))
                 info.lyrics = it.value().toString();
         }

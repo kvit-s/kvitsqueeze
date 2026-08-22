@@ -25,6 +25,10 @@ AppContext::AppContext(const Options &options, QObject *parent)
     // Takes the player rather than a track id: the queue advances without
     // anyone asking (prd.md FR-6.4), and an open lyric sheet has to follow it.
     m_lyrics = new LyricsController(m_player, m_session, this);
+    m_lyrics->setLocalMusicFolder(m_settings->localMusicFolder());
+    connect(m_settings, &Settings::interfaceChanged, m_lyrics, [this] {
+        m_lyrics->setLocalMusicFolder(m_settings->localMusicFolder());
+    });
     m_artwork = new ArtworkCache(m_session, m_settings, this);
 
     // ── The queue. Two feeds, deliberately: the cursor moves on every track

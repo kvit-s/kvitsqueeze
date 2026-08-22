@@ -40,9 +40,13 @@ private slots:
     void aTrackChangeUnderAnOpenPaneIsFollowed();
     void aTrackChangeWithThePaneClosedFetchesNothing();
     void reopeningTheSameTrackKeepsTheAnswerItHas();
+    void aTimedSidecarIsFollowedLineByLine();
+    void anUntimedSheetHasNoCurrentLine();
+    void aSidecarWithoutTimestampsIsStillASheet();
 
 private:
-    static PlayerStatus playing(const QString &trackId, const QString &title)
+    static PlayerStatus playing(const QString &trackId, const QString &title,
+                                double elapsed = 0.0)
     {
         PlayerStatus status;
         status.valid = true;
@@ -50,6 +54,7 @@ private:
         status.trackId = trackId;
         status.title = title;
         status.duration = 240.0;
+        status.elapsed = elapsed;
         return status;
     }
 
@@ -88,7 +93,7 @@ void TestLyricsController::nothingIsKnownBeforeAnyoneLooks()
 
     QVERIFY(!lyrics.isOpen());
     QCOMPARE(lyrics.status(), int(LyricsController::Unknown));
-    QVERIFY(lyrics.text().isEmpty());
+    QVERIFY(lyrics.lines().isEmpty());
 }
 
 void TestLyricsController::openingAsksAndSaysItIsAsking()
@@ -120,7 +125,7 @@ void TestLyricsController::aSheetTheFileCarriesIsShown()
                          sheet(QStringLiteral("10125"), QStringLiteral("the first line of the song")));
 
     QCOMPARE(lyrics.status(), int(LyricsController::Ready));
-    QCOMPARE(lyrics.text(), QStringLiteral("the first line of the song"));
+    QCOMPARE(lyrics.lines(), QStringList{ QStringLiteral("the first line of the song") });
 }
 
 void TestLyricsController::aFileWithoutLyricsSaysSoRatherThanStayingBlank()
@@ -134,7 +139,7 @@ void TestLyricsController::aFileWithoutLyricsSaysSoRatherThanStayingBlank()
     lyrics.applySongInfo(QStringLiteral("10095"), answeredWithNothing(QStringLiteral("10095")));
 
     QCOMPARE(lyrics.status(), int(LyricsController::Absent));
-    QVERIFY(lyrics.text().isEmpty());
+    QVERIFY(lyrics.lines().isEmpty());
 }
 
 void TestLyricsController::aRequestThatFailedIsNotAFileWithoutLyrics()
@@ -166,7 +171,7 @@ void TestLyricsController::aReplyAboutThePreviousTrackIsIgnored()
     lyrics.applySongInfo(QStringLiteral("10125"),
                          sheet(QStringLiteral("10125"), QStringLiteral("the first line of the song")));
 
-    QVERIFY2(lyrics.text().isEmpty(),
+    QVERIFY2(lyrics.lines().isEmpty(),
              "the previous track's sheet was drawn under the current track");
     QCOMPARE(lyrics.trackTitle(), QStringLiteral("1234"));
 }
@@ -186,10 +191,10 @@ void TestLyricsController::aTrackChangeUnderAnOpenPaneIsFollowed()
     // The queue advances. Nothing asked this app for it.
     Q_EMIT session.statusReceived(playing(QStringLiteral("10552"), QStringLiteral("1234")));
 
-    QVERIFY2(lyrics.text().isEmpty(), "the old sheet survived the track it belonged to");
+    QVERIFY2(lyrics.lines().isEmpty(), "the old sheet survived the track it belonged to");
     lyrics.applySongInfo(QStringLiteral("10552"),
                          sheet(QStringLiteral("10552"), QStringLiteral("a different song")));
-    QCOMPARE(lyrics.text(), QStringLiteral("a different song"));
+    QCOMPARE(lyrics.lines(), QStringList{ QStringLiteral("a different song") });
 }
 
 void TestLyricsController::aTrackChangeWithThePaneClosedFetchesNothing()
@@ -222,7 +227,82 @@ void TestLyricsController::reopeningTheSameTrackKeepsTheAnswerItHas()
     // Straight back to the sheet: no second request, and no flash of "Looking…"
     // over an answer the app already has.
     QCOMPARE(lyrics.status(), int(LyricsController::Ready));
-    QCOMPARE(lyrics.text(), QStringLiteral("the first line of the song"));
+    QCOMPARE(lyrics.lines(), QStringList{ QStringLiteral("the first line of the song") });
+}
+
+void TestLyricsController::aTimedSidecarIsFollowedLineByLine()
+{
+    LmsSession session;
+    PlaybackController player(&session);
+    LyricsController lyrics(&player, &session);
+    Q_EMIT session.statusReceived(playing(QStringLiteral("10125"), QStringLiteral("#1 Track")));
+
+    lyrics.setOpen(true);
+    lyrics.applySidecar(QStringLiteral("10125"),
+                        QStringLiteral("[00:10.00]first\n[00:20.00]second\n"),
+                        sheet(QStringLiteral("10125"), QStringLiteral("the server's copy")));
+
+    QVERIFY2(lyrics.isTimed(), "a sheet with timestamps was treated as plain text");
+    QCOMPARE(lyrics.lines(),
+             (QStringList{ QStringLiteral("first"), QStringLiteral("second") }));
+    QVERIFY2(!lyrics.lines().contains(QStringLiteral("the server's copy")),
+             "the untimed tag was preferred over the timed sidecar");
+
+    // The position drives the highlight, and nothing is current before the
+    // first cue.
+    Q_EMIT session.statusReceived(
+        playing(QStringLiteral("10125"), QStringLiteral("#1 Track"), 0.0));
+    QCOMPARE(lyrics.currentLine(), -1);
+
+    Q_EMIT session.statusReceived(
+        playing(QStringLiteral("10125"), QStringLiteral("#1 Track"), 12.0));
+    QCOMPARE(lyrics.currentLine(), 0);
+
+    Q_EMIT session.statusReceived(
+        playing(QStringLiteral("10125"), QStringLiteral("#1 Track"), 25.0));
+    QCOMPARE(lyrics.currentLine(), 1);
+}
+
+void TestLyricsController::anUntimedSheetHasNoCurrentLine()
+{
+    // The one thing this must not do: space the lines evenly across the
+    // duration and call the result the current line. The file does not say,
+    // and prd.md FR-2.5's rule is that an unknown is not a value.
+    LmsSession session;
+    PlaybackController player(&session);
+    LyricsController lyrics(&player, &session);
+    Q_EMIT session.statusReceived(playing(QStringLiteral("10125"), QStringLiteral("#1 Track")));
+
+    lyrics.setOpen(true);
+    lyrics.applySidecar(QStringLiteral("10125"), QString(),
+                        sheet(QStringLiteral("10125"), QStringLiteral("one\ntwo\nthree")));
+
+    QCOMPARE(lyrics.status(), int(LyricsController::Ready));
+    QCOMPARE(lyrics.lines().size(), 3);
+    QVERIFY(!lyrics.isTimed());
+
+    Q_EMIT session.statusReceived(
+        playing(QStringLiteral("10125"), QStringLiteral("#1 Track"), 120.0));
+    QCOMPARE(lyrics.currentLine(), -1);
+}
+
+void TestLyricsController::aSidecarWithoutTimestampsIsStillASheet()
+{
+    // Some `.lrc` files are plain text with the wrong extension. It is a sheet,
+    // it just cannot be followed — and it still beats an empty tag.
+    LmsSession session;
+    PlaybackController player(&session);
+    LyricsController lyrics(&player, &session);
+    Q_EMIT session.statusReceived(playing(QStringLiteral("10125"), QStringLiteral("#1 Track")));
+
+    lyrics.setOpen(true);
+    lyrics.applySidecar(QStringLiteral("10125"), QStringLiteral("just words\nno cues\n"),
+                        answeredWithNothing(QStringLiteral("10125")));
+
+    QCOMPARE(lyrics.status(), int(LyricsController::Ready));
+    QVERIFY(!lyrics.isTimed());
+    QCOMPARE(lyrics.lines(),
+             (QStringList{ QStringLiteral("just words"), QStringLiteral("no cues") }));
 }
 
 QTEST_APPLESS_MAIN(TestLyricsController)

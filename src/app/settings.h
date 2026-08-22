@@ -45,6 +45,17 @@ class Settings : public QObject
     Q_PROPERTY(bool startMinimized READ startMinimized WRITE setStartMinimized NOTIFY interfaceChanged)
     Q_PROPERTY(QString lastView READ lastView WRITE setLastView NOTIFY interfaceChanged)
 
+    // prd.md FR-5.5. Where the music the *server* is playing can be read from
+    // *this* PC — a mapped drive, a UNC share, a local folder — so the app can
+    // find the `.lrc` beside a track. Empty is the default and means the
+    // lyric pane shows the server's untimed tag only.
+    //
+    // It is not a second music library and nothing browses it: the only file
+    // this app ever opens under it is a sidecar named after a track the server
+    // already told it about.
+    Q_PROPERTY(QString localMusicFolder READ localMusicFolder WRITE setLocalMusicFolder
+                   NOTIFY interfaceChanged)
+
     // prd.md FR-7.11. Under interfaceChanged rather than engineChanged on
     // purpose: engineChanged restarts the audio engine, and a preference about
     // when to pause has no business doing that.
@@ -99,6 +110,7 @@ public:
     bool startWithWindows() const;
     bool startMinimized() const;
     QString lastView() const;
+    QString localMusicFolder() const;
     bool pauseWhileMicInUse() const;
     int micResumeDelayMs() const;
 
@@ -110,6 +122,7 @@ public:
     void setStartWithWindows(bool enabled);
     void setStartMinimized(bool minimized);
     void setLastView(const QString &view);
+    void setLocalMusicFolder(const QString &folder);
     void setPauseWhileMicInUse(bool enabled);
     void setMicResumeDelayMs(int delayMs);
 

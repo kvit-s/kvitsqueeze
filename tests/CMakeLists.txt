@@ -67,6 +67,14 @@ sqz_add_test(RandomMixControllerTests test_randommixcontroller.cpp unit)
 # unconfigured session, so it opens nothing.
 sqz_add_test(LyricsControllerTests test_lyricscontroller.cpp unit)
 
+# ── The timed half of the same requirement.
+#
+# The timings are not on the wire at all: LMS serves the file's plain USLT tag
+# and reads no `.lrc` beside it. Locating that sidecar from the server's own
+# path, and reading it, are pure functions so the whole path is testable
+# without a share to mount.
+sqz_add_test(LrcSheetTests test_lrcsheet.cpp unit)
+
 # ── Engine argument construction and log scraping.
 #
 # buildArguments() is the entire interface to the child process, and

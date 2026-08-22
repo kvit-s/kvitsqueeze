@@ -173,6 +173,21 @@ intact. Two consequences worth knowing:
 
 The four media keys work globally, whether or not the window has focus.
 
+### Lyrics
+
+Click the cover on Now Playing. The server serves whatever plain lyric tag the
+file carries, which is enough to read but not to follow.
+
+For lyrics that follow the song, point **Settings → Music folder on this PC**
+at the same music the server is playing — a mapped drive, a UNC share, a local
+folder. SqeezeAmp then looks for an `.lrc` beside each track and highlights the
+line being sung. Lyrion does not read those files itself, which is why this is
+the client's job and why the setting exists at all.
+
+Left empty, nothing is read from disk and the pane shows the server's copy.
+A sheet with no timings is drawn with **no line highlighted**: where the file
+does not say, the app does not guess.
+
 ### Where it keeps things
 
 | | |

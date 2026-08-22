@@ -244,8 +244,8 @@ QStringList musicFolder(int start, int count, const QString &folderId)
 
 QStringList songInfo(const QString &trackId)
 {
-    // The window is over fields: id, title and lyrics is three, and the room
-    // above that costs nothing because the tag set decides what is sent.
+    // The window is over fields: id, title, url and lyrics is four, and the
+    // room above that costs nothing because the tag set decides what is sent.
     return window(QStringLiteral("songinfo"), 0, 20,
                   { param(QStringLiteral("track_id"), trackId), lyricsTags() });
 }

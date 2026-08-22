@@ -38,11 +38,15 @@ inline QString trackTags()  { return QStringLiteral("tags:acdeKltuy"); }
 // it the albums reply carries no artist name at all, and every cell in the
 // grid loses its second line.
 inline QString albumTags()  { return QStringLiteral("tags:ajlqSsy"); }
-// `w` is lyrics, and it is the whole of this tag set. Checked against Lyrion
-// Music Server 9.1.0 by asking for one letter at a time: `R`, `k` and `z`
-// return no such field, and a wrong letter here would read as "no file in this
-// library has any lyrics" rather than as a mistake.
-inline QString lyricsTags() { return QStringLiteral("tags:w"); }
+// `w` is lyrics and `u` is the file's location. Checked against Lyrion Music
+// Server 9.1.0 by asking for one letter at a time: `R`, `k` and `z` return no
+// such field, and a wrong letter here would read as "no file in this library
+// has any lyrics" rather than as a mistake.
+//
+// The location is here because the server's own lyrics are never timed — it
+// serves the file's USLT tag and reads no `.lrc` sidecar — so the app has to
+// go looking for one beside the track. See lyricssidecar.h.
+inline QString lyricsTags() { return QStringLiteral("tags:uw"); }
 
 // ── Transport (prd.md FR-5.2).
 QStringList play();

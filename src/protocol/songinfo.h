@@ -28,6 +28,10 @@ struct SongInfo
     QString trackId;
     QString title;
 
+    // Where the server keeps the file — its own path, not one this machine can
+    // necessarily open. It is what a `.lrc` sidecar is located from.
+    QString url;
+
     // Empty means the file carries no lyric tag — *if* `answered` is true.
     QString lyrics;
 

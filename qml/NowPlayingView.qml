@@ -268,41 +268,84 @@ Item {
                 }
             }
 
-            ScrollView {
+            // The sheet. A list rather than one block of text, because the
+            // line being sung has to be findable — and because a timed sheet
+            // scrolls itself, which a Text cannot do.
+            //
+            // ApplyRange, not StrictlyEnforceRange: the current line is kept in
+            // the middle band while the song plays, and a reader who flicks
+            // ahead is left where they flicked rather than snapped back.
+            ListView {
                 id: sheet
+
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                contentWidth: availableWidth
+                model: app.lyrics.status === Lyrics.Ready ? app.lyrics.lines : []
+                currentIndex: app.lyrics.currentLine
+                highlightRangeMode: ListView.ApplyRange
+                preferredHighlightBegin: height / 2 - theme.rowHeight
+                preferredHighlightEnd: height / 2 + theme.rowHeight
+                highlightMoveDuration: theme.animation * 3
+                boundsBehavior: Flickable.StopAtBounds
+                visible: app.lyrics.status === Lyrics.Ready
 
-                Label {
-                    width: sheet.availableWidth
-                    text: {
-                        switch (app.lyrics.status) {
-                        case Lyrics.Ready:   return app.lyrics.text
-                        case Lyrics.Loading: return qsTr("Looking…")
-                        case Lyrics.Absent:  return qsTr("This file carries no lyrics.")
-                        case Lyrics.Unavailable:
-                            return qsTr("The server did not answer. Tap to try again.")
-                        default: return qsTr("Nothing to show.")
-                        }
-                    }
-                    color: app.lyrics.status === Lyrics.Ready ? theme.textPrimary
-                                                              : theme.textFaint
-                    font.pixelSize: theme.fontNormal
-                    lineHeight: 1.35
+                delegate: Label {
+                    required property int index
+                    required property string modelData
+
+                    width: ListView.view.width
+                    horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
-                    horizontalAlignment: app.lyrics.status === Lyrics.Ready
-                                         ? Text.AlignLeft : Text.AlignHCenter
+                    text: modelData
+                    topPadding: theme.spacing / 2
+                    bottomPadding: theme.spacing / 2
+                    font.pixelSize: theme.fontLarge
+                    lineHeight: 1.3
 
-                    // A failed request is the one state with something to do
-                    // about it, and this is the only place the retry belongs:
-                    // a button for it would be on screen in the four states
-                    // where it means nothing.
-                    TapHandler {
-                        enabled: app.lyrics.status === Lyrics.Unavailable
-                        onTapped: app.lyrics.refresh()
+                    // Three weights, not two: the line being sung, the lines
+                    // around it, and — when the sheet is untimed — every line
+                    // equally, because nothing is known about which is current
+                    // and dimming the rest would be a claim.
+                    color: !app.lyrics.timed ? theme.textMuted
+                         : index === app.lyrics.currentLine ? theme.textPrimary
+                         : theme.textFaint
+                    font.bold: app.lyrics.timed && index === app.lyrics.currentLine
+
+                    Behavior on color {
+                        ColorAnimation { duration: theme.animation }
                     }
+                }
+            }
+
+            // Every other state is one line about the state itself, centred in
+            // the pane rather than at the top of an empty list.
+            Label {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                visible: app.lyrics.status !== Lyrics.Ready
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.WordWrap
+                color: theme.textFaint
+                font.pixelSize: theme.fontNormal
+                text: {
+                    switch (app.lyrics.status) {
+                    case Lyrics.Loading: return qsTr("Looking…")
+                    case Lyrics.Absent:  return qsTr("This track carries no lyrics.")
+                    case Lyrics.Unavailable:
+                        return qsTr("The server did not answer. Tap to try again.")
+                    default: return qsTr("Nothing to show.")
+                    }
+                }
+
+                // A failed request is the one state with something to do about
+                // it, and this is the only place the retry belongs: a button
+                // for it would be on screen in the four states where it means
+                // nothing.
+                TapHandler {
+                    enabled: app.lyrics.status === Lyrics.Unavailable
+                    onTapped: app.lyrics.refresh()
                 }
             }
         }
