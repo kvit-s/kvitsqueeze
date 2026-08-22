@@ -252,6 +252,8 @@ ApplicationWindow {
 
             // ── Left rail.
             Rectangle {
+                id: rail
+
                 Layout.preferredWidth: app.settings.railCollapsed ? theme.rowHeight * 1.6
                                                                   : theme.railWidth
                 Layout.fillHeight: true
@@ -261,10 +263,43 @@ ApplicationWindow {
                     NumberAnimation { duration: theme.animation }
                 }
 
+                // ── How tall a rail entry is, and how far it sits from the
+                // next one. Both are shared out from the height the window
+                // happens to have, because the rail is a fixed list with no
+                // scroll: eleven entries either fit or they are drawn under
+                // the bottom bar, and a constant that fits a 760 px window
+                // loses Queue and Settings in a 460 px one.
+                //
+                // So the height is claimed first, up to theme.rowHeight, and
+                // the gap takes what is left up to theme.railGap. In a tall
+                // window that is full rows with a full gap between them; as
+                // the window shrinks the rows give way first, then the gap,
+                // and only a window shorter than the minimum runs out of both.
+                // The floor is one glyph plus its bearing — below that a row
+                // is not a row.
+                readonly property int railRows: 11          // ten destinations, plus Settings
+                readonly property int railGaps: 14          // every gap the column draws
+                readonly property int railHeadHeight:
+                    railHead.implicitHeight + theme.spacing
+                    + (app.settings.railCollapsed ? collapsedSearch.implicitHeight
+                                                  : theme.rowHeight)
+                // Free of the column's own spacing on purpose: this reads the
+                // rail's height, which the row above sets, so nothing here
+                // depends on the values it is about to produce.
+                readonly property int railFree: height - 12 - railHeadHeight
+                readonly property int railRowHeight:
+                    Math.max(theme.fontLarge + 4,
+                             Math.min(theme.rowHeight,
+                                      Math.floor(railFree / railRows) - theme.railGap))
+                readonly property int railRowGap:
+                    Math.max(1, Math.min(theme.railGap,
+                                         Math.floor((railFree - railRows * railRowHeight)
+                                                    / railGaps)))
+
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 6
-                    spacing: 1
+                    spacing: rail.railRowGap
 
                     // ── The collapse control sits above the search box rather
                     // than at the foot of the rail. A chevron at the bottom of
@@ -273,6 +308,8 @@ ApplicationWindow {
                     // what it does. Right-aligned so it lands on the edge that
                     // moves.
                     RowLayout {
+                        id: railHead
+
                         Layout.fillWidth: true
                         spacing: 0
 
@@ -339,6 +376,8 @@ ApplicationWindow {
 
                     // Collapsed, the box becomes the thing it had inside it.
                     IconButton {
+                        id: collapsedSearch
+
                         Layout.alignment: Qt.AlignHCenter
                         glyph: theme.iconSearch
                         glyphSize: theme.fontNormal
@@ -376,7 +415,13 @@ ApplicationWindow {
                             readonly property bool current: root.currentView === modelData.id
 
                             Layout.fillWidth: true
-                            height: theme.rowHeight
+                            // `height` here would be ignored: a ColumnLayout
+                            // sizes its children itself and reads
+                            // Layout.preferredHeight, falling back to the
+                            // implicit height — which for one glyph is about
+                            // 20 px. That is why the rail drew rows two thirds
+                            // of the height this file appeared to ask for.
+                            Layout.preferredHeight: rail.railRowHeight
                             // See Theme.qml's metrics: an ItemDelegate hides
                             // 12 px of padding above and below its content.
                             topPadding: 0
@@ -427,7 +472,9 @@ ApplicationWindow {
                     ItemDelegate {
                         id: settingsItem
                         Layout.fillWidth: true
-                        height: theme.rowHeight
+                        // Layout.preferredHeight, not height — see the rail
+                        // delegate above.
+                        Layout.preferredHeight: rail.railRowHeight
                         // See Theme.qml's metrics: an ItemDelegate hides 12 px
                         // of padding above and below its content.
                         topPadding: 0

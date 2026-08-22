@@ -71,6 +71,14 @@ QtObject {
     readonly property int gridCell:    compact ? 150 : 184
     readonly property int railWidth:   compact ? 168 : 190
 
+    // The most a rail entry is allowed to stand off from the next one — a
+    // ceiling, not a distance: Main.qml hands out whatever height the window
+    // has spare and stops here. A rail row is a destination rather than a line
+    // of data, and ten of them at the 1 px this used to be read as one block
+    // of icons; collapsed, where the label is gone and the glyph is the whole
+    // control, they read as a strip of glyphs with no rows at all.
+    readonly property int railGap:     compact ? 5 : 8
+
     readonly property int fontSmall:  compact ? 11 : 12
     readonly property int fontNormal: compact ? 12 : 13
     readonly property int fontLarge:  compact ? 15 : 17
