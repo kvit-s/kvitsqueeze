@@ -24,6 +24,7 @@ private slots:
     void musicFolderOmitsTheRootId();
     void queueActionsMapToTheRightCommandWord();
     void serverStatusAsksForNoPlayerList();
+    void songInfoAsksForTheLyricTagAndNothingElse();
 };
 
 void TestLmsCommands::pauseIsExplicitRatherThanAToggle()
@@ -134,6 +135,18 @@ void TestLmsCommands::serverStatusAsksForNoPlayerList()
     QCOMPARE(LmsCommand::serverStatus(),
              (QStringList{ QStringLiteral("serverstatus"), QStringLiteral("0"),
                            QStringLiteral("0") }));
+}
+
+void TestLmsCommands::songInfoAsksForTheLyricTagAndNothingElse()
+{
+    // `songinfo` returns one *field* per loop entry, so the window is over
+    // fields and not over tracks — and the tag letter for lyrics is `w`.
+    // A wrong letter here does not fail: it reads back as a library in which
+    // no file has any lyrics at all.
+    QCOMPARE(LmsCommand::songInfo(QStringLiteral("10125")),
+             (QStringList{ QStringLiteral("songinfo"), QStringLiteral("0"),
+                           QStringLiteral("20"), QStringLiteral("track_id:10125"),
+                           QStringLiteral("tags:w") }));
 }
 
 QTEST_APPLESS_MAIN(TestLmsCommands)

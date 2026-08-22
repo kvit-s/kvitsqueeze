@@ -27,6 +27,7 @@ sqz_add_test(PlayerStatusTests   test_playerstatus.cpp   unit)
 sqz_add_test(BrowseReplyTests    test_browsereply.cpp    unit)
 sqz_add_test(CliEventTests       test_clievent.cpp       unit)
 sqz_add_test(PlayerIdentityTests test_playeridentity.cpp unit)
+sqz_add_test(SongInfoTests       test_songinfo.cpp       unit)
 
 # ── The Random Mix's wire format (prd.md FR-3.9).
 #
@@ -57,6 +58,14 @@ sqz_add_test(PlaybackControllerTests test_playbackcontroller.cpp unit)
 # has to be noticed rather than announced. Drives the controller against an
 # unconfigured session, so it opens nothing.
 sqz_add_test(RandomMixControllerTests test_randommixcontroller.cpp unit)
+
+# ── The lyric sheet, and the absence that is not a fact (prd.md FR-5.5).
+#
+# LMS omits the field for a file that carries no lyrics, so "this file has
+# none" and "the request failed" arrive as the same silence. Everything else
+# here follows from keeping them apart. Drives the controller against an
+# unconfigured session, so it opens nothing.
+sqz_add_test(LyricsControllerTests test_lyricscontroller.cpp unit)
 
 # ── Engine argument construction and log scraping.
 #

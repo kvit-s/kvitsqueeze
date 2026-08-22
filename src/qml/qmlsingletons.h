@@ -18,6 +18,7 @@
 #include "diagnosticsmodel.h"
 #include "enginecontroller.h"
 #include "librarycontroller.h"
+#include "lyricscontroller.h"
 #include "mixgenremodel.h"
 #include "playbackcontroller.h"
 #include "queuemodel.h"
@@ -103,6 +104,17 @@ struct MixGenreModelForeign
     QML_FOREIGN(MixGenreModel)
     QML_NAMED_ELEMENT(MixGenreModel)
     QML_UNCREATABLE("Ask RandomMixController for its genre scope")
+};
+
+// Registered for its enums as much as its properties: Lyrics.Absent and
+// Lyrics.Unavailable are the two the pane must not draw the same way, and a
+// QML file spelling them as numbers is how they would end up merged.
+struct LyricsControllerForeign
+{
+    Q_GADGET
+    QML_FOREIGN(LyricsController)
+    QML_NAMED_ELEMENT(Lyrics)
+    QML_UNCREATABLE("LyricsController is owned by AppContext")
 };
 
 struct DiagnosticsModelForeign

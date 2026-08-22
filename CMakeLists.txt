@@ -91,6 +91,7 @@ add_library(sqz-protocol ${SQZ_LIB_TYPE}
     src/protocol/playerstatus.cpp
     src/protocol/randommix.cpp
     src/protocol/serverdiscovery.cpp
+    src/protocol/songinfo.cpp
 )
 target_link_libraries(sqz-protocol PUBLIC Qt6::Core)
 target_include_directories(sqz-protocol PUBLIC src/protocol)
@@ -153,6 +154,7 @@ add_library(sqz-app ${SQZ_LIB_TYPE}
     src/app/diagnosticsmodel.cpp
     src/app/enginecontroller.cpp
     src/app/librarycontroller.cpp
+    src/app/lyricscontroller.cpp
     src/app/mixgenremodel.cpp
     src/app/playbackcontroller.cpp
     src/app/queuemodel.cpp

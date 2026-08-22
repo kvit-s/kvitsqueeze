@@ -19,6 +19,7 @@
 #include "diagnosticsmodel.h"
 #include "enginecontroller.h"
 #include "librarycontroller.h"
+#include "lyricscontroller.h"
 #include "playbackcontroller.h"
 #include "queuemodel.h"
 #include "randommixcontroller.h"
@@ -41,6 +42,7 @@ class AppContext : public QObject
     Q_PROPERTY(QueueModel *queue READ queue CONSTANT)
     Q_PROPERTY(LibraryController *library READ library CONSTANT)
     Q_PROPERTY(RandomMixController *mix READ mix CONSTANT)
+    Q_PROPERTY(LyricsController *lyrics READ lyrics CONSTANT)
     Q_PROPERTY(SearchModel *search READ search CONSTANT)
     Q_PROPERTY(EngineController *engine READ engineController CONSTANT)
     Q_PROPERTY(DiagnosticsModel *diagnostics READ diagnostics CONSTANT)
@@ -77,6 +79,7 @@ public:
     QueueModel *queue() const { return m_queue; }
     LibraryController *library() const { return m_library; }
     RandomMixController *mix() const { return m_mix; }
+    LyricsController *lyrics() const { return m_lyrics; }
     SearchModel *search() const { return m_search; }
     EngineController *engineController() const { return m_engineController; }
     DiagnosticsModel *diagnostics() const { return m_diagnostics; }
@@ -122,6 +125,7 @@ private:
     QueueModel *m_queue = nullptr;
     LibraryController *m_library = nullptr;
     RandomMixController *m_mix = nullptr;
+    LyricsController *m_lyrics = nullptr;
     SearchModel *m_search = nullptr;
     ArtworkCache *m_artwork = nullptr;
     DiagnosticsModel *m_diagnostics = nullptr;

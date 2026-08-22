@@ -169,7 +169,7 @@ intact. Two consequences worth knowing:
 | <kbd>Ctrl</kbd>+<kbd>U</kbd> | Queue |
 | <kbd>Ctrl</kbd>+<kbd>M</kbd> | Mini player |
 | <kbd>Ctrl</kbd>+<kbd>,</kbd> | Settings |
-| <kbd>Esc</kbd> | Back |
+| <kbd>Esc</kbd> | Close the lyrics, or go back |
 
 The four media keys work globally, whether or not the window has focus.
 

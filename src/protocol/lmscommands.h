@@ -38,6 +38,11 @@ inline QString trackTags()  { return QStringLiteral("tags:acdeKltuy"); }
 // it the albums reply carries no artist name at all, and every cell in the
 // grid loses its second line.
 inline QString albumTags()  { return QStringLiteral("tags:ajlqSsy"); }
+// `w` is lyrics, and it is the whole of this tag set. Checked against Lyrion
+// Music Server 9.1.0 by asking for one letter at a time: `R`, `k` and `z`
+// return no such field, and a wrong letter here would read as "no file in this
+// library has any lyrics" rather than as a mistake.
+inline QString lyricsTags() { return QStringLiteral("tags:w"); }
 
 // ── Transport (prd.md FR-5.2).
 QStringList play();
@@ -94,6 +99,18 @@ QStringList playlists(int start, int count);
 QStringList playlistTracks(int start, int count, const QString &playlistId);
 QStringList musicFolder(int start, int count, const QString &folderId);
 QStringList search(int start, int count, const QString &term);
+
+// ── One track, described in full (prd.md FR-5.5).
+//
+// `songinfo` is the only query here whose reply is a loop of *fields* rather
+// than of records — see songinfo.h. The count is therefore how many fields to
+// return, not how many tracks, and asking for fewer than the tag set produces
+// truncates the answer silently.
+//
+// Asked for a track the user is looking at, never on the status poll: a lyric
+// sheet is a few kilobytes and the heartbeat runs whether anybody is reading
+// or not.
+QStringList songInfo(const QString &trackId);
 
 // ── Random Mix (prd.md FR-3.9, the N4 exception — see randommix.h).
 //

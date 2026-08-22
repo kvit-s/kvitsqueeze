@@ -122,6 +122,7 @@ QtObject {
     readonly property string iconFilter:    String.fromCharCode(0xE71C)
     readonly property string iconSave:      String.fromCharCode(0xE74E)
     readonly property string iconClear:     String.fromCharCode(0xE894)
+    readonly property string iconClose:     String.fromCharCode(0xE711)
 
     // ── The rail's ten destinations, one distinct glyph each.
     //

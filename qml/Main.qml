@@ -138,7 +138,12 @@ ApplicationWindow {
     Shortcut {
         sequence: "Esc"
         onActivated: {
-            if (searchField.activeFocus)
+            // The lyric sheet first: it is drawn over whatever is underneath,
+            // so dismissing it is what Esc means while it is up (prd.md
+            // FR-5.5).
+            if (app.lyrics.open)
+                app.lyrics.open = false
+            else if (searchField.activeFocus)
                 searchField.focus = false
             else if (stack.depth > 1)
                 stack.pop()

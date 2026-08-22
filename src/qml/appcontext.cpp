@@ -22,6 +22,9 @@ AppContext::AppContext(const Options &options, QObject *parent)
     m_library = new LibraryController(m_session, this);
     m_mix = new RandomMixController(m_session, this);
     m_search = new SearchModel(m_session, this);
+    // Takes the player rather than a track id: the queue advances without
+    // anyone asking (prd.md FR-6.4), and an open lyric sheet has to follow it.
+    m_lyrics = new LyricsController(m_player, m_session, this);
     m_artwork = new ArtworkCache(m_session, m_settings, this);
 
     // ── The queue. Two feeds, deliberately: the cursor moves on every track

@@ -242,6 +242,14 @@ QStringList musicFolder(int start, int count, const QString &folderId)
     return window(QStringLiteral("musicfolder"), start, count, filters);
 }
 
+QStringList songInfo(const QString &trackId)
+{
+    // The window is over fields: id, title and lyrics is three, and the room
+    // above that costs nothing because the tag set decides what is sent.
+    return window(QStringLiteral("songinfo"), 0, 20,
+                  { param(QStringLiteral("track_id"), trackId), lyricsTags() });
+}
+
 QStringList search(int start, int count, const QString &term)
 {
     return window(QStringLiteral("search"), start, count,

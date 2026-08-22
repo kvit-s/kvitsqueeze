@@ -73,6 +73,48 @@ Item {
                 width: height
                 coverId: app.player.coverId
                 requestSize: 600
+
+                // prd.md FR-5.5. The cover is the only thing on this screen
+                // big enough to be an obvious target and the only one that is
+                // not already a control, and the sheet it opens is about the
+                // track the cover is of.
+                TapHandler {
+                    enabled: app.player.hasTrack
+                    onTapped: app.lyrics.toggle()
+                }
+
+                HoverHandler {
+                    id: coverHover
+                    enabled: app.player.hasTrack
+                    cursorShape: Qt.PointingHandCursor
+                }
+
+                // Nothing else on this screen is clickable, so the cover has
+                // to say that it is — once, on hover, rather than as a badge
+                // that sits over the artwork forever.
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: theme.spacing
+                    width: hint.width + theme.spacing * 2
+                    height: hint.height + theme.spacing
+                    radius: height / 2
+                    color: Qt.rgba(0, 0, 0, 0.66)
+                    opacity: coverHover.hovered && !app.lyrics.open ? 1 : 0
+                    visible: opacity > 0
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: theme.animation }
+                    }
+
+                    Label {
+                        id: hint
+                        anchors.centerIn: parent
+                        text: qsTr("Lyrics")
+                        color: "#ffffff"
+                        font.pixelSize: theme.fontSmall
+                    }
+                }
             }
 
             // ── Up next, beside the cover instead of under the seek bar. It is
@@ -172,5 +214,97 @@ Item {
         }
 
         Item { Layout.fillHeight: true; Layout.preferredHeight: 1 }
+    }
+
+    // ── The lyric sheet (prd.md FR-5.5), over the pane rather than inside the
+    // cover. In a small window the cover is barely 200 px square, which is a
+    // column four or five words wide — the sheet needs the whole pane to be
+    // readable at all, and it is a mode the user opened rather than a panel
+    // competing for the layout.
+    //
+    // Every state says which one it is. LMS omits the field for a file that
+    // carries no lyrics, which on the wire looks exactly like a request that
+    // failed, and drawing both as an empty sheet is the metadata version of
+    // reporting an unknown as a fact (prd.md FR-2.5).
+    Rectangle {
+        id: lyricsPane
+
+        anchors.fill: parent
+        color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.94)
+        opacity: app.lyrics.open ? 1 : 0
+        visible: opacity > 0
+
+        Behavior on opacity {
+            NumberAnimation { duration: theme.animation }
+        }
+
+        // Anywhere off the text closes it, which is the same gesture that
+        // opened it. The close button is for the people who look for one.
+        TapHandler { onTapped: app.lyrics.open = false }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: theme.margin
+            spacing: theme.spacing
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: theme.spacing
+
+                Label {
+                    Layout.fillWidth: true
+                    text: app.lyrics.trackTitle
+                    color: theme.textMuted
+                    font.pixelSize: theme.fontNormal
+                    elide: Text.ElideRight
+                }
+
+                IconButton {
+                    glyph: theme.iconClose
+                    glyphSize: theme.fontNormal
+                    baseColor: theme.textMuted
+                    tooltip: qsTr("Close the lyrics")
+                    onClicked: app.lyrics.open = false
+                }
+            }
+
+            ScrollView {
+                id: sheet
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                contentWidth: availableWidth
+
+                Label {
+                    width: sheet.availableWidth
+                    text: {
+                        switch (app.lyrics.status) {
+                        case Lyrics.Ready:   return app.lyrics.text
+                        case Lyrics.Loading: return qsTr("Looking…")
+                        case Lyrics.Absent:  return qsTr("This file carries no lyrics.")
+                        case Lyrics.Unavailable:
+                            return qsTr("The server did not answer. Tap to try again.")
+                        default: return qsTr("Nothing to show.")
+                        }
+                    }
+                    color: app.lyrics.status === Lyrics.Ready ? theme.textPrimary
+                                                              : theme.textFaint
+                    font.pixelSize: theme.fontNormal
+                    lineHeight: 1.35
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: app.lyrics.status === Lyrics.Ready
+                                         ? Text.AlignLeft : Text.AlignHCenter
+
+                    // A failed request is the one state with something to do
+                    // about it, and this is the only place the retry belongs:
+                    // a button for it would be on screen in the four states
+                    // where it means nothing.
+                    TapHandler {
+                        enabled: app.lyrics.status === Lyrics.Unavailable
+                        onTapped: app.lyrics.refresh()
+                    }
+                }
+            }
+        }
     }
 }
