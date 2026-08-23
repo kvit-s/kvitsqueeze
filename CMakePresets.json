@@ -30,6 +30,12 @@
       "generator": "Unix Makefiles",
       "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "windows-ci",
+      "displayName": "Windows CI (whatever Visual Studio the runner has)",
+      "inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
     }
   ],
   "buildPresets": [
@@ -43,7 +49,12 @@
       "configurePreset": "windows-msvc-debug",
       "configuration": "Debug"
     },
-    { "name": "linux-release", "configurePreset": "linux-release" }
+    { "name": "linux-release", "configurePreset": "linux-release" },
+    {
+      "name": "windows-ci",
+      "configurePreset": "windows-ci",
+      "configuration": "Release"
+    }
   ],
   "testPresets": [
     {
@@ -64,6 +75,20 @@
       "name": "unit-linux",
       "configurePreset": "linux-release",
       "filter": { "include": { "label": "unit" } },
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "unit-ci",
+      "configurePreset": "windows-ci",
+      "configuration": "Release",
+      "filter": { "include": { "label": "unit" } },
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "shell-ci",
+      "configurePreset": "windows-ci",
+      "configuration": "Release",
+      "filter": { "include": { "label": "shell" } },
       "output": { "outputOnFailure": true }
     }
   ]

@@ -13,15 +13,14 @@ concurrency:
 
 jobs:
   windows:
-    name: Windows / Qt 6.10.1 / MSVC 2022
+    name: Windows / Qt 6.10.1
     runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
 
       # install-qt-action exports QT_ROOT_DIR, which is exactly what
-      # CMakePresets.json feeds to CMAKE_PREFIX_PATH — so the same preset the
-      # batch files use works here unchanged.
+      # CMakePresets.json feeds to CMAKE_PREFIX_PATH.
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
@@ -32,14 +31,23 @@ jobs:
           modules: 'qtshadertools'
           cache: true
 
-      # The presets are called directly rather than through win-build.bat: the
-      # batch files exist to find a toolchain on a developer's machine, and the
-      # runner already has one on PATH. One less layer to misreport a failure.
+      # The `windows-ci` preset exists because `windows-msvc-release` pins the
+      # generator to "Visual Studio 17 2022" — correct on a developer machine,
+      # and wrong the day GitHub rolls windows-latest to a newer image. It did:
+      # the runner now ships VS 2026 and CMake answered "could not find any
+      # instance of Visual Studio". `windows-ci` names no generator, so CMake
+      # takes whichever Visual Studio the runner actually has. Qt's
+      # msvc2022_64 kit is ABI-compatible across those toolsets, so this
+      # exercises the same code rather than a different product.
+      #
+      # Called directly rather than through win-build.bat: those scripts exist
+      # to find a toolchain on a developer's machine, and the runner already
+      # has one. One less layer to misreport a failure.
       - name: Configure
-        run: cmake --preset windows-msvc-release
+        run: cmake --preset windows-ci
 
       - name: Build
-        run: cmake --build --preset windows-msvc-release
+        run: cmake --build --preset windows-ci
 
       # Deterministic: no display, no network, no child processes. Includes
       # LayeringGuard, which needs Python 3 — preinstalled on this image, so the
@@ -53,7 +61,7 @@ jobs:
       - name: Test (unit)
         run: |
           $env:PATH = "$env:QT_ROOT_DIR\bin;$env:PATH"
-          ctest --preset unit-windows
+          ctest --preset unit-ci
 
       # Needs a QML engine and a window. The runner has a desktop session, so
       # this normally works as-is; if it ever goes flaky, set
@@ -64,7 +72,7 @@ jobs:
       - name: Test (shell)
         run: |
           $env:PATH = "$env:QT_ROOT_DIR\bin;$env:PATH"
-          ctest --preset shell-windows
+          ctest --preset shell-ci
 
       # ctest writes its own log; on a failure that is more useful than the
       # step output, which interleaves across tests.
@@ -73,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ctest-log
-          path: build-windows-msvc-release/Testing/Temporary/LastTest.log
+          path: build-windows-ci/Testing/Temporary/LastTest.log
           if-no-files-found: ignore
 
 # Deliberately absent: win-deploy.bat and win-package.bat. Both need
