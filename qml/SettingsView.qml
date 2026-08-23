@@ -511,7 +511,7 @@ Item {
                 text: qsTr("SqeezeAmp %1 — a native player for Lyrion Music Server.\n\n"
                            + "SqeezeAmp is free software under the Mozilla Public "
                            + "License v2, whose text is in the licenses folder next "
-                           + "to the application.\n\n"
+                           + "to the application. Its source is at %3\n\n"
                            + "Audio is played by squeezelite, a separate program "
                            + "distributed under the GNU General Public License v3. "
                            + "Its licence text and a written offer for its source are "
@@ -519,7 +519,7 @@ Item {
                            + "Qt is used under the LGPL v3; the Qt libraries ship as "
                            + "separate DLLs so they can be replaced with your own "
                            + "build.\n\nLogs: %2")
-                        .arg(app.version).arg(app.logDirectory)
+                        .arg(app.version).arg(app.logDirectory).arg(app.sourceUrl)
             }
         }
     }

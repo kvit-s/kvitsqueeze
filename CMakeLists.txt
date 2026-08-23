@@ -15,6 +15,20 @@ if(NOT SQZ_VERSION_FULL MATCHES "^${PROJECT_VERSION}([-+].+)?$")
         "'+build' suffix.")
 endif()
 
+# Where this build's own source can be had. MPL-2.0 §3.2(a) requires a build
+# distributed in Executable Form to tell its recipients that — the About screen
+# is where it says so. Defined here rather than written into the QML so a fork
+# that ships its own build points at its own source by changing one cache
+# variable, instead of shipping a binary that credits someone else's repository.
+set(SQZ_SOURCE_URL "https://github.com/kvit-s/sqeezeamp" CACHE STRING
+    "Source location this build reports on the About screen (MPL-2.0 §3.2)")
+
+if(NOT SQZ_SOURCE_URL)
+    message(FATAL_ERROR
+        "SQZ_SOURCE_URL is empty. A distributed build must name where its "
+        "source can be obtained; see the Licensing section of README.md.")
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
@@ -212,7 +226,8 @@ if(WIN32)
     target_link_libraries(sqz-qml PRIVATE ole32 comctl32)
 endif()
 
-target_compile_definitions(sqz-qml PRIVATE SQZ_VERSION="${SQZ_VERSION_FULL}")
+target_compile_definitions(sqz-qml PRIVATE SQZ_VERSION="${SQZ_VERSION_FULL}"
+                                            SQZ_SOURCE_URL="${SQZ_SOURCE_URL}")
 
 # The `Sqz` QML module. Types are declared as QML_FOREIGN wrappers in
 # src/qml/qmlsingletons.h — never with a macro on the class itself — so a
@@ -353,7 +368,8 @@ target_link_libraries(sqeezeamp PRIVATE
     Qt6::Widgets
 )
 # main.cpp reports the version too, and the define on sqz-qml is PRIVATE.
-target_compile_definitions(sqeezeamp PRIVATE SQZ_VERSION="${SQZ_VERSION_FULL}")
+target_compile_definitions(sqeezeamp PRIVATE SQZ_VERSION="${SQZ_VERSION_FULL}"
+                                              SQZ_SOURCE_URL="${SQZ_SOURCE_URL}")
 
 sqz_keep_qml_registration(sqeezeamp)
 

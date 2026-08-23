@@ -53,6 +53,9 @@ class AppContext : public QObject
     Q_PROPERTY(bool connected READ isConnected NOTIFY connectionChanged)
     Q_PROPERTY(QString connectionMessage READ connectionMessage NOTIFY connectionChanged)
     Q_PROPERTY(QString version READ version CONSTANT)
+    // Where this build's source is. MPL-2.0 §3.2(a) obliges a distributed
+    // binary to say so, and the About screen is where it does.
+    Q_PROPERTY(QString sourceUrl READ sourceUrl CONSTANT)
     Q_PROPERTY(QString logDirectory READ logDirectory CONSTANT)
 
     // prd.md FR-1.1. Empty is a normal answer on a routed network — the
@@ -91,6 +94,7 @@ public:
     bool isConnected() const;
     QString connectionMessage() const { return m_connectionMessage; }
     QString version() const;
+    QString sourceUrl() const;
     QString logDirectory() const;
 
     QVariantList discoveredServers() const { return m_discovered; }

@@ -1,0 +1,60 @@
+name: Bug report
+description: Something behaves differently from how it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. The Diagnostics output below is the single
+        most useful thing you can include — it carries what the audio engine
+        negotiated, what it printed, and what it could not determine, which is
+        usually the difference between a fix and a guessing match.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: SqeezeAmp version
+      description: Settings → About, or the installer filename.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: lms-version
+    attributes:
+      label: Lyrion Music Server version
+      description: And how it runs, if that is unusual — a container, a NAS package, a Home Assistant add-on.
+      placeholder: "9.1.0, Home Assistant add-on"
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics output
+      description: |
+        Settings → Diagnostics → the copy button, pasted here. If the app will
+        not start far enough to reach that screen, say so and skip this.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: audio
+    attributes:
+      label: For playback problems only
+      description: |
+        Your output device, and whether the track is MP3 / FLAC / something
+        else. Playback that looks like it is running — position advancing,
+        server streaming — while nothing is audible is usually a sample-rate or
+        device-selection problem, and those two facts identify it quickly.
+    validations:
+      required: false

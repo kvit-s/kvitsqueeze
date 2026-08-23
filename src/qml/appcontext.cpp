@@ -169,6 +169,11 @@ QString AppContext::version() const
     return QStringLiteral(SQZ_VERSION);
 }
 
+QString AppContext::sourceUrl() const
+{
+    return QStringLiteral(SQZ_SOURCE_URL);
+}
+
 QString AppContext::logDirectory() const
 {
     return AppLog::directory();

@@ -1,0 +1,49 @@
+name: Feature request
+description: Something SqeezeAmp should do and does not
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please read the **Settled decisions** section of
+        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) first. SqeezeAmp has a
+        deliberately narrow scope, and several of the most obvious requests —
+        a player switcher, radio and podcasts, a web or network control API —
+        are decisions rather than omissions. That does not make them
+        unaskable; it means the useful conversation starts from what changed.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: |
+        The problem, rather than the feature. What are you doing today, and
+        where does the app get in the way?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: touches-settled
+    attributes:
+      label: Does this touch a settled decision?
+      options:
+        - "No, I do not think so"
+        - "Yes — one player, itself (no player list or switcher)"
+        - "Yes — My Music only (no plugins, radio, podcasts, favourites)"
+        - "Yes — local control only (no network control surface)"
+        - "Yes — shared-mode audio by default"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: why-reopen
+    attributes:
+      label: If yes, what should reopen it
+      description: |
+        What has changed, or what does the decision get wrong? For a plugin
+        specifically, the question that matters is its *shape*: a flat set of
+        verbs with fixed arguments over the local library is arguable, a nested
+        descriptor tree the client has to render generically is not.
+    validations:
+      required: false
