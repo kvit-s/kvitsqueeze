@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // What arrives on the CLI event socket, and what it means.

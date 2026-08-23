@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // "Is anything on this PC recording right now?" — and nothing else.

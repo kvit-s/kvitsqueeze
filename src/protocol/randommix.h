@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // The Random Mix — the server's own RandomPlay plugin, driven through its

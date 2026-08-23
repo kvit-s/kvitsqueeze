@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // Global search across artists, albums and tracks (prd.md FR-3.5).

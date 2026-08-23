@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "mixgenremodel.h"
 
 MixGenreModel::MixGenreModel(QObject *parent)

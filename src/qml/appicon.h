@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // The application icon, drawn rather than shipped.

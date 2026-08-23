@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 // The launcher. Everything it would otherwise do lives in sqz-core:
 // AppContext composes the player, SqeezeAmpApplication owns the QML engine.
 // Keep this file a launcher — a second entry point (a test harness, a

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // Everything the app remembers between runs (prd.md FR-7.4), as one object

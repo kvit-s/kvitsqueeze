@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MPL-2.0
 """Check the module boundary the tree is built on.
 
 src/ is five modules (see CMakeLists.txt, "The module boundary"). CMake

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // The lyric sheet for whatever is playing, timed where the timing exists

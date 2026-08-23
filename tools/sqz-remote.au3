@@ -1,3 +1,5 @@
+; SPDX-License-Identifier: MPL-2.0
+
 #NoTrayIcon
 ;
 ; sqz-remote.au3 — send one transport verb to a running SqeezeAmp.

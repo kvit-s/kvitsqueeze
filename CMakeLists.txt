@@ -378,9 +378,14 @@ include(GNUInstallDirs)
 # This is a distribution obligation, not documentation (prd.md §11.2). v1
 # ships stock squeezelite.exe as a child process; bundling that GPLv3 binary
 # requires its licence text and a written offer for its source to travel with
-# it, whatever licence this application itself carries. Qt's LGPL texts come
+# it, independently of this application's own MPL-2.0. Qt's LGPL texts come
 # from the Qt kit at deploy time and are added by win-deploy.bat.
+#
+# LICENSE is this application's own, and is listed for the same reason as the
+# rest: MPL-2.0 is a file-level licence, so a shipped tree that omits it leaves
+# a recipient no way to know what terms the files they were given carry.
 set(SQZ_LICENSE_FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
     "${CMAKE_CURRENT_SOURCE_DIR}/THIRD-PARTY-NOTICES.md"
     "${CMAKE_CURRENT_SOURCE_DIR}/packaging/licenses/LICENSE.squeezelite"
     "${CMAKE_CURRENT_SOURCE_DIR}/packaging/licenses/WRITTEN-OFFER.txt")
@@ -391,8 +396,8 @@ foreach(_lic IN LISTS SQZ_LICENSE_FILES)
     if(NOT EXISTS "${_lic}")
         message(FATAL_ERROR
             "Required licence file is missing: ${_lic}. Every binary artifact "
-            "must ship it; see SQZ_LICENSE_FILES in CMakeLists.txt and "
-            "prd.md §11.2.")
+            "must ship it; see SQZ_LICENSE_FILES in CMakeLists.txt and the "
+            "Licensing section of README.md.")
     endif()
 endforeach()
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "credentialstore.h"
 
 #ifdef Q_OS_WIN

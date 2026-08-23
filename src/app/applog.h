@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // prd.md FR-9.1: a rotating log file under %LOCALAPPDATA%\SqeezeAmp\logs\,

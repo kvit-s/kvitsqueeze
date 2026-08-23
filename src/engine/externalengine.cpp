@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "externalengine.h"
 
 #include "playeridentity.h"

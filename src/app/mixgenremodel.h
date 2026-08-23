@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // The genres a random mix is allowed to draw from (prd.md FR-3.9).

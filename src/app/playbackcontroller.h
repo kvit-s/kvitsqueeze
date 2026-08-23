@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // Transport, volume and now-playing, as QML sees them — and the place

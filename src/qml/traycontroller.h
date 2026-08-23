@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // prd.md FR-7.1: the tray icon — current-track tooltip, a transport context

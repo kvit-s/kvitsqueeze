@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "searchmodel.h"
 
 #include "lmscommands.h"

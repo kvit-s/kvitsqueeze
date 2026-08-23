@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // prd.md FR-1.3: the control API's password lives in the Windows Credential

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // One list model for every browse screen (prd.md FR-3.2, FR-3.4).

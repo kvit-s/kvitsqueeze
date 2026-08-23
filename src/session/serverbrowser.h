@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // prd.md FR-1.1: find Lyrion Music Server instances by UDP broadcast on 3483.

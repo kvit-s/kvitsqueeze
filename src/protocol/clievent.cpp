@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "clievent.h"
 
 #include "lmsrequest.h"

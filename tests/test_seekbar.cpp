@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 // prd.md FR-5.2: drag the position bar and the track moves.
 //
 // This exists because the feature shipped broken twice. It was written from a

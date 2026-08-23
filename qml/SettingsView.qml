@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
@@ -507,6 +509,9 @@ Item {
                 font.pixelSize: theme.fontSmall
                 textFormat: Text.PlainText
                 text: qsTr("SqeezeAmp %1 — a native player for Lyrion Music Server.\n\n"
+                           + "SqeezeAmp is free software under the Mozilla Public "
+                           + "License v2, whose text is in the licenses folder next "
+                           + "to the application.\n\n"
                            + "Audio is played by squeezelite, a separate program "
                            + "distributed under the GNU General Public License v3. "
                            + "Its licence text and a written offer for its source are "

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // The Random Mix, as QML sees it (prd.md FR-3.9).

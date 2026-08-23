@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // The bridge between QML's `image://artwork/<coverId>/<size>` and ArtworkCache.

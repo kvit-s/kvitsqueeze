@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // prd.md FR-7.2: global media keys — Play/Pause, Next, Previous, Stop.

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // Backend B (prd.md §7.3.2): supervise a stock squeezelite.exe child process.

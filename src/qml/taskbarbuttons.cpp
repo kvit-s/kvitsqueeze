@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "taskbarbuttons.h"
 
 #include <QCoreApplication>

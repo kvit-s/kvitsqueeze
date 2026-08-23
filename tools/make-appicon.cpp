@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 // Render packaging/windows/sqeezeamp.ico from AppIcon::application().
 //
 // The window and the tray get their icon by painting it at run time

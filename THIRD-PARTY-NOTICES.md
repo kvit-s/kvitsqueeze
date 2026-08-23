@@ -12,8 +12,8 @@ as `engine/squeezelite.exe` and runs it as a child process. The binary is
 **unmodified**: SqeezeAmp talks to it only through documented command-line
 arguments and its log output (prd.md §7.3.2).
 
-Obligations that travel with the binary, whatever licence SqeezeAmp itself
-carries:
+Obligations that travel with the binary. They are independent of SqeezeAmp's
+own MPL-2.0 and are not discharged by it:
 
 - `packaging/licenses/LICENSE.squeezelite` — the full, verbatim GPLv3 text.
 - `packaging/licenses/WRITTEN-OFFER.txt` — the offer to supply corresponding

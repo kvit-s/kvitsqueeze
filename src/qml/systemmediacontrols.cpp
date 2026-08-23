@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "systemmediacontrols.h"
 
 // The whole WinRT surface is behind this one test. prd.md FR-7.5 is P1 and

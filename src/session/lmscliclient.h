@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // The push event stream: a plain TCP socket to the server's CLI on port 9090

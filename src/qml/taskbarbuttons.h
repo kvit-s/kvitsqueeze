@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // prd.md FR-7.7: transport buttons on the taskbar thumbnail, so the track can

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // The UDP discovery exchange on port 3483 (prd.md FR-1.1), as two pure

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // One row of a browse list, whatever kind of list it is, plus the parsing that

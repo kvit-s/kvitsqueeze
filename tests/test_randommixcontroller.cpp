@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "lmssession.h"
 #include "mixgenremodel.h"
 #include "playeridentity.h"

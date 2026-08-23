@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // Building the two request forms LMS accepts, and decoding what comes back on

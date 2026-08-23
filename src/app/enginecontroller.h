@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // The audio engine as QML sees it: a state, a few numbers, and a device list.

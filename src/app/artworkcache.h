@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // Album art: fetched once, kept on disk, kept in memory, and never decoded on
