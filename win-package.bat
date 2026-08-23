@@ -82,6 +82,15 @@ rem zip nor the installer may carry it. Removed after the mirror rather than
 rem excluded from it, so a copy left by an earlier run goes too.
 if exist "%PKGDIR%\engine" rmdir /s /q "%PKGDIR%\engine"
 
+rem The stage is a build output directory, so it also holds the import
+rem libraries every target produced and make-appicon.exe, a build-time tool
+rem that generates the icon and has no business on a user's disk. The
+rem installer has excluded these since it was written; the zip did not, and
+rem shipped 6.5 MB of them. Deleted here rather than excluded from the mirror,
+rem for the same reason as the engine above.
+del /q "%PKGDIR%\*.lib" "%PKGDIR%\*.exp" "%PKGDIR%\*.pdb" "%PKGDIR%\*.ilk" >nul 2>&1
+if exist "%PKGDIR%\make-appicon.exe" del /q "%PKGDIR%\make-appicon.exe"
+
 rem ── Portable zip.
 rem
 rem Compress-Archive opens every staged file for read, and a DLL written moments

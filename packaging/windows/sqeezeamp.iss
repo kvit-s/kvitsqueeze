@@ -102,7 +102,7 @@ Name: "startup"; Description: "Start {#AppName} with Windows, minimised to the t
 ; beside it, licenses\ and the engine repair script. Note there is no engine\ —
 ; see the header.
 Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; \
-    Excludes: "*.pdb,*.ilk,*.exp,*.lib,engine\*"
+    Excludes: "*.pdb,*.ilk,*.exp,*.lib,make-appicon.exe,engine\*"
 ; Downloaded to {tmp} by the [Code] section below, then unpacked here. The
 ; executable inside is named for its build variant, so NormaliseEngineName
 ; renames it to the one ExternalEngine looks for.
