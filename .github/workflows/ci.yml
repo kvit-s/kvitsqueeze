@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A new push to the same branch supersedes the run in flight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows / Qt 6.10.1 / MSVC 2022
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # install-qt-action exports QT_ROOT_DIR, which is exactly what
+      # CMakePresets.json feeds to CMAKE_PREFIX_PATH — so the same preset the
+      # batch files use works here unchanged.
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.1'
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: 'qtshadertools'
+          cache: true
+
+      # The presets are called directly rather than through win-build.bat: the
+      # batch files exist to find a toolchain on a developer's machine, and the
+      # runner already has one on PATH. One less layer to misreport a failure.
+      - name: Configure
+        run: cmake --preset windows-msvc-release
+
+      - name: Build
+        run: cmake --build --preset windows-msvc-release
+
+      # Deterministic: no display, no network, no child processes. Includes
+      # LayeringGuard, which needs Python 3 — preinstalled on this image, so the
+      # test registers rather than being skipped. That guard is the one most
+      # likely to catch an outside contributor's first mistake, because the
+      # module boundary is not something the compiler can express.
+      # The PATH line is the same requirement README.md documents for running
+      # ctest by hand: the test binaries load Qt DLLs at start-up and find them
+      # nowhere else. install-qt-action normally puts them on PATH already, so
+      # this is belt and braces rather than a fix.
+      - name: Test (unit)
+        run: |
+          $env:PATH = "$env:QT_ROOT_DIR\bin;$env:PATH"
+          ctest --preset unit-windows
+
+      # Needs a QML engine and a window. The runner has a desktop session, so
+      # this normally works as-is; if it ever goes flaky, set
+      # QT_QPA_PLATFORM=offscreen here rather than dropping the label —
+      # ShellTests is what catches the qt_add_qml_module registration trap,
+      # which fails at *runtime* with a ReferenceError and would otherwise
+      # reach users.
+      - name: Test (shell)
+        run: |
+          $env:PATH = "$env:QT_ROOT_DIR\bin;$env:PATH"
+          ctest --preset shell-windows
+
+      # ctest writes its own log; on a failure that is more useful than the
+      # step output, which interleaves across tests.
+      - name: Upload test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-log
+          path: build-windows-msvc-release/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore
+
+# Deliberately absent: win-deploy.bat and win-package.bat. Both need
+# squeezelite.exe, which is not in this repository on purpose, and fetching a
+# GPLv3 binary in CI raises a distribution question that a build check has no
+# business answering. This job builds and tests; it does not package.

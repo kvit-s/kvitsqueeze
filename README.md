@@ -6,6 +6,8 @@ itself as a SqueezeBox player, browses your library, and plays to a local audio
 device — with a real desktop UI rather than the server's web skin in a browser
 control.
 
+![SqeezeAmp playing an album, showing the Now Playing view](docs/now-playing.png)
+
 **It controls exactly one player: itself.** Other players on your server —
 hardware Squeezeboxes, other squeezelite instances, bridges — are not listed,
 not selectable, and not controllable. This is a music player for this PC, not a
