@@ -1,5 +1,7 @@
 # SqeezeAmp
 
+[![CI](https://github.com/kvit-s/sqeezeamp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kvit-s/sqeezeamp/actions/workflows/ci.yml)
+
 A native Windows player for [Lyrion Music Server](https://lyrion.org) (LMS,
 formerly Logitech Media Server). One Qt 6 / C++20 application that registers
 itself as a SqueezeBox player, browses your library, and plays to a local audio
