@@ -8,8 +8,8 @@
 ; Two things here are obligations rather than choices:
 ;
 ;   * The licences directory is installed, always. Shipping the GPLv3
-;     squeezelite binary requires its licence text and a written offer for its
-;     source to travel with it (prd.md §11.2).
+;     squeezelite binary requires its licence text to travel with it, and its
+;     source to be attached to the same release (prd.md §11.2).
 ;   * Qt is installed as separate DLLs, never statically linked, so a user can
 ;     relink against their own Qt build. That is the LGPLv3 obligation prd.md
 ;     §11.4 says to actually honour.

@@ -303,11 +303,11 @@ distributed under GPLv3.
 
 The rest:
 
-- The bundled `squeezelite.exe` is **GPLv3**, and any distributed build must
-  carry its licence text and a written offer for its source. Both live in
-  `packaging/licenses/`, and `CMakeLists.txt` refuses to configure without
-  them. `WRITTEN-OFFER.txt` has two blanks — a distributor name and a contact —
-  that a release must fill in.
+- The bundled `squeezelite.exe` is **GPLv3**, so any distributed build carries
+  its licence text (`packaging/licenses/`, and `CMakeLists.txt` refuses to
+  configure without it) and its corresponding source, attached to the same
+  release as the binary. That is GPLv3 §6(d) — source from a network location,
+  since the binary comes from one — rather than §6(b)'s written offer.
 - Qt is used under **LGPLv3**, which is why the Qt libraries ship as separate
   DLLs and are never linked statically: you must be able to relink against your
   own Qt build.

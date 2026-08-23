@@ -26,6 +26,7 @@ build:   WIN PORTAUDIO WINEVENT RESAMPLE FFMPEG OPUS DSD SSL LINKALL
 #    covers prd.md FR-2.1 in full.
 #
 # Distribution obligation: this binary is GPLv3. Shipping it requires its
-# licence text and a written offer for its source to travel with it. That is
-# independent of SqeezeAmp's own MPL-2.0 (prd.md §11.2). Both are in
-# packaging\licenses\ and CMakeLists.txt fails to configure without them.
+# licence text to travel with it, and its corresponding source to be attached
+# to the same release (GPLv3 §6(d) - upstream publishes no tags or releases,
+# so there is nothing to link to that matches this build). That is independent
+# of SqeezeAmp's own MPL-2.0 (prd.md §11.2). See THIRD-PARTY-NOTICES.md.

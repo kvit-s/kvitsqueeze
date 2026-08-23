@@ -514,8 +514,9 @@ Item {
                            + "to the application. Its source is at %3\n\n"
                            + "Audio is played by squeezelite, a separate program "
                            + "distributed under the GNU General Public License v3. "
-                           + "Its licence text and a written offer for its source are "
-                           + "in the licenses folder next to the application.\n\n"
+                           + "Its licence text is in the licenses folder next to the "
+                           + "application, and its source is published with whatever "
+                           + "release this copy came from.\n\n"
                            + "Qt is used under the LGPL v3; the Qt libraries ship as "
                            + "separate DLLs so they can be replaced with your own "
                            + "build.\n\nLogs: %2")

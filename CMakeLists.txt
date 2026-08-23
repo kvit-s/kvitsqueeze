@@ -393,9 +393,15 @@ include(GNUInstallDirs)
 #
 # This is a distribution obligation, not documentation (prd.md §11.2). v1
 # ships stock squeezelite.exe as a child process; bundling that GPLv3 binary
-# requires its licence text and a written offer for its source to travel with
-# it, independently of this application's own MPL-2.0. Qt's LGPL texts come
-# from the Qt kit at deploy time and are added by win-deploy.bat.
+# requires its licence text to travel with it, independently of this
+# application's own MPL-2.0. Qt's LGPL texts come from the Qt kit at deploy time
+# and are added by win-deploy.bat.
+#
+# There is no written offer here. GPLv3 §6(d) lets the source obligation be met
+# by pointing at a network location instead, which a Release carrying the
+# upstream source beside the binary does — see THIRD-PARTY-NOTICES.md. §6(b)'s
+# written offer is the alternative for offline distribution, and it obliges the
+# distributor to name and staff a contact for three years.
 #
 # LICENSE is this application's own, and is listed for the same reason as the
 # rest: MPL-2.0 is a file-level licence, so a shipped tree that omits it leaves
@@ -403,8 +409,7 @@ include(GNUInstallDirs)
 set(SQZ_LICENSE_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
     "${CMAKE_CURRENT_SOURCE_DIR}/THIRD-PARTY-NOTICES.md"
-    "${CMAKE_CURRENT_SOURCE_DIR}/packaging/licenses/LICENSE.squeezelite"
-    "${CMAKE_CURRENT_SOURCE_DIR}/packaging/licenses/WRITTEN-OFFER.txt")
+    "${CMAKE_CURRENT_SOURCE_DIR}/packaging/licenses/LICENSE.squeezelite")
 
 # A missing file here is a configure-time error rather than a package that
 # quietly ships without its notices.

@@ -47,12 +47,14 @@ if exist "%SQZ_ENGINE_EXE%" (
 rem ── The licence payload (prd.md §11.2).
 rem
 rem Shipping the GPLv3 engine binary obliges the package to carry its licence
-rem text and a written offer for its source. These travel with every artifact,
-rem which is why CMakeLists.txt refuses to configure without them.
+rem text; SqeezeAmp's own MPL-2.0 obliges it to carry LICENSE. Both travel with
+rem every artifact, which is why CMakeLists.txt refuses to configure without
+rem them. squeezelite's source is not staged here - it is a release asset,
+rem see THIRD-PARTY-NOTICES.md.
 if not exist "%STAGE%\licenses" mkdir "%STAGE%\licenses"
+copy /y LICENSE "%STAGE%\licenses\" >nul
 copy /y THIRD-PARTY-NOTICES.md "%STAGE%\licenses\" >nul
 copy /y packaging\licenses\LICENSE.squeezelite "%STAGE%\licenses\" >nul
-copy /y packaging\licenses\WRITTEN-OFFER.txt "%STAGE%\licenses\" >nul
 copy /y packaging\engine-version.txt "%STAGE%\licenses\" >nul
 
 echo win-deploy: staged into %STAGE%
