@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "lrcsheet.h"
 #include "lyricssidecar.h"
 
@@ -95,7 +97,7 @@ void TestLrcSheet::anOffsetShiftsEveryLine()
 void TestLrcSheet::metadataRowsAreNotLines()
 {
     const LrcSheet sheet = LrcSheet::parse(QStringLiteral(
-        "[ar:Artist]\n[ti:Track]\n[al:Album]\n[by:someone]\n"
+        "[ar:Example Artist]\n[ti:#1 Track]\n[al:Example Album]\n[by:someone]\n"
         "[00:05.00]the only line\n"));
 
     QCOMPARE(sheet.lines.size(), 1);

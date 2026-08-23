@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #include "lmssession.h"
 #include "lyricscontroller.h"
 #include "playbackcontroller.h"

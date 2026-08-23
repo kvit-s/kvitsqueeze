@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // What `songinfo` says about one track, and the parsing that turns its reply

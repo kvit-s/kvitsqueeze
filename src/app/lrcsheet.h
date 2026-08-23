@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 #pragma once
 
 // A timed lyric sheet, and the two pure functions that produce one (prd.md
@@ -16,11 +18,11 @@
 //
 // The format is the usual one, and the parts of it that actually occur:
 //
-//   [00:23.058]the first line of the song       a line, at 23.058 s
-//   [00:12.00][01:30.00]same line        a refrain, timed twice
-//   [ar:Artist] [ti:Track]           metadata, discarded
-//   [offset:+250]                        a global shift, in milliseconds
-//   [00:00.000]...                       a placeholder line, kept as it is
+//   [00:23.058]the first line          a line, at 23.058 s
+//   [00:12.00][01:30.00]same line      a refrain, timed twice
+//   [ar:Artist] [ti:Track]             metadata, discarded
+//   [offset:+250]                      a global shift, in milliseconds
+//   [00:00.000]...                     a placeholder line, kept as it is
 //
 // Nothing here reads a file or knows what a track is: it takes text and gives
 // back lines, so the whole of it is testable without a share to mount.
