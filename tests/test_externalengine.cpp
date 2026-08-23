@@ -11,10 +11,15 @@
 //
 // applyLogLine() is the other half of that interface and the whole of FR-2.5
 // under this backend. The log lines below are captured verbatim from
-// squeezelite v1.9.9-1432 talking to a real Lyrion Music Server, because the
-// format is explicitly *not* a stable interface (prd.md §7.3.4) — the point of
-// pinning it here is that an engine upgrade that changes it fails a test
-// instead of silently emptying the diagnostics panel.
+// squeezelite 2.0.0-1585 — the build named in packaging/engine-version.txt —
+// talking to a real Lyrion Music Server, because the format is explicitly
+// *not* a stable interface (prd.md §7.3.4). The point of pinning it here is
+// that an engine upgrade that changes it fails a test instead of silently
+// emptying the diagnostics panel.
+//
+// One exception, marked where it appears: the underrun line could not be
+// provoked on the capture machine, so its text is the one this project has
+// always used, confirmed only to still be present in the pinned binary.
 class TestExternalEngine : public QObject
 {
     Q_OBJECT
@@ -144,7 +149,7 @@ void TestExternalEngine::theStreamBufferHoldsAWholeTrack()
     const QStringList args = ExternalEngine::buildArguments(baseConfig());
     const QString sizes = args.value(args.indexOf("-b") + 1);
 
-    QCOMPARE(sizes, QStringLiteral("32768:3763"));
+    QCOMPARE(sizes, QStringLiteral("32768:3445"));
     QVERIFY(sizes.section(QLatin1Char(':'), 0, 0).toInt() * 1024 > 20 * 1000 * 1000);
 }
 
@@ -259,23 +264,23 @@ void TestExternalEngine::connectedMovesTheStateToRunning()
     status.state = EngineStatus::State::Starting;
 
     QVERIFY(ExternalEngine::applyLogLine(
-        QStringLiteral("[02:44:13.188] slimproto:937 connected"), &status));
+        QStringLiteral("[02:44:13.188] slimproto:942 connected"), &status));
     QCOMPARE(status.state, EngineStatus::State::Running);
 
     // Idempotent: a reconnect logs it again and must not churn the UI.
     QVERIFY(!ExternalEngine::applyLogLine(
-        QStringLiteral("[02:44:13.188] slimproto:937 connected"), &status));
+        QStringLiteral("[02:44:13.188] slimproto:942 connected"), &status));
 }
 
 void TestExternalEngine::readsTheDecoderFromCodecOpen()
 {
     EngineStatus status;
     QVERIFY(ExternalEngine::applyLogLine(
-        QStringLiteral("[02:44:17.312] codec_open:272 codec open: 'm'"), &status));
+        QStringLiteral("[02:44:17.312] codec_open:278 codec open: 'm'"), &status));
     QCOMPARE(status.decoder, QStringLiteral("MP3"));
 
     QVERIFY(ExternalEngine::applyLogLine(
-        QStringLiteral("[02:50:01.100] codec_open:272 codec open: 'f'"), &status));
+        QStringLiteral("[02:50:01.100] codec_open:278 codec open: 'f'"), &status));
     QCOMPARE(status.decoder, QStringLiteral("FLAC"));
 }
 
@@ -287,7 +292,7 @@ void TestExternalEngine::anUnknownCodecLetterLeavesTheDecoderAlone()
     status.decoder = QStringLiteral("FLAC");
 
     QVERIFY(!ExternalEngine::applyLogLine(
-        QStringLiteral("[02:44:17.312] codec_open:272 codec open: 'z'"), &status));
+        QStringLiteral("[02:44:17.312] codec_open:278 codec open: 'z'"), &status));
     QCOMPARE(status.decoder, QStringLiteral("FLAC"));
 }
 
@@ -297,7 +302,7 @@ void TestExternalEngine::readsTheSourceRateFromTrackStart()
     QCOMPARE(status.sourceSampleRate, -1);
 
     QVERIFY(ExternalEngine::applyLogLine(
-        QStringLiteral("[02:44:17.889] _output_frames:153 track start sample rate: 44100 "
+        QStringLiteral("[13:22:31.367] _output_frames:153 track start sample rate: 44100 "
                        "replay_gain: 0"),
         &status));
     QCOMPARE(status.sourceSampleRate, 44100);
@@ -307,18 +312,25 @@ void TestExternalEngine::readsTheOutputDeviceAndRateFromOpenedDevice()
 {
     EngineStatus status;
     QVERIFY(ExternalEngine::applyLogLine(
-        QStringLiteral("[02:44:13.168] output_init_pa:283 opened device 11 - Realtek "
-                       "Digital Output [Windows WASAPI] at 44100 latency 100 ms"),
+        QStringLiteral("[13:22:23.857] _pa_open:413 opened device 2 - Primary Sound "
+                       "Driver [Windows DirectSound] at 44100 latency 240 ms"),
         &status));
 
     QCOMPARE(status.outputSampleRate, 44100);
-    QCOMPARE(status.outputDevice, QStringLiteral("Realtek Digital Output"));
+    QCOMPARE(status.outputDevice, QStringLiteral("Primary Sound Driver"));
 }
 
 void TestExternalEngine::underrunsStayUnknownUntilOneHappens()
 {
     // -1 is "this backend never told us", which the UI hides. 0 would be a
     // measurement claiming there have been none.
+    //
+    // Unlike every other line here, these two are not a fresh capture: no
+    // underrun could be provoked on the machine the 2.0.0-1585 lines came
+    // from. The text was verified to still exist in that binary, which is
+    // weaker evidence than the rest of this file rests on — if the diagnostics
+    // panel ever reports underruns as unknown while they are plainly
+    // happening, start here.
     EngineStatus status;
     QCOMPARE(status.underruns, -1);
 
@@ -335,20 +347,20 @@ void TestExternalEngine::anUnrelatedLineChangesNothing()
 {
     EngineStatus status;
     QVERIFY(!ExternalEngine::applyLogLine(
-        QStringLiteral("[02:44:13.168] register_flac:341 using flac to decode ogf,flc"),
+        QStringLiteral("[13:22:23.879] register_flac:407 using flac to decode ogf,flc"),
         &status));
     QVERIFY(status.decoder.isEmpty());
     QCOMPARE(status.sourceSampleRate, -1);
     QCOMPARE(status.outputSampleRate, -1);
 }
 
-// Captured from the shipped engine pointed at an HDMI endpoint that reports
+// Captured from the pinned engine pointed at an HDMI endpoint that reports
 // "supported rates: 48000" and nothing else, playing a 44.1 kHz MP3. It
-// repeated 1,400 times in twelve seconds. Nothing else in the app can tell
+// repeated 765 times in fourteen seconds. Nothing else in the app can tell
 // this apart from playing: the server streams, the transport says play, the
 // position advances, and there is no sound.
 static const QString kOpenFailure = QStringLiteral(
-    "[12:27:25.806] _pa_open:396 error opening device 10 - "
+    "[13:26:41.220] _pa_open:399 error opening device 11 - "
     "LG TV SSCR2 (NVIDIA High Definition Audio) [Windows WASAPI] : Invalid sample rate");
 
 void TestExternalEngine::aDeviceThatWillNotOpenAtTheTracksRateIsSaidOutLoud()
@@ -387,7 +399,7 @@ void TestExternalEngine::openingTheDeviceClearsTheComplaint()
     QVERIFY(!status.lastError.isEmpty());
 
     QVERIFY(ExternalEngine::applyLogLine(
-        QStringLiteral("[12:29:08.632] _pa_open:410 opened device 10 - "
+        QStringLiteral("[13:26:41.198] _pa_open:413 opened device 11 - "
                        "LG TV SSCR2 (NVIDIA High Definition Audio) "
                        "[Windows WASAPI] at 48000 latency 22 ms"),
         &status));

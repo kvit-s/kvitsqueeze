@@ -115,10 +115,11 @@ reversible:
 the entire interface to the child process — arguments out, status in — is
 testable without launching anything.
 
-**Never patch the shipped squeezelite binary.** Talking to it only through
-documented arguments and log output is what keeps SqeezeAmp's own licence
-unconstrained, and patching it would silently change the log format the status
-scraper reads.
+**Never patch the squeezelite binary.** Talking to it only through documented
+arguments and log output is what keeps SqeezeAmp's own licence unconstrained,
+and patching it would silently change the log format the status scraper reads.
+The binary is not shipped either — the installer downloads it from upstream —
+which makes "stock and independently obtainable" a fact rather than a promise.
 
 ---
 

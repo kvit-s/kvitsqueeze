@@ -5,53 +5,71 @@ Every binary artifact must ship this file and everything under
 because a package that quietly omits its notices satisfies none of the
 obligations below.
 
-## squeezelite — GPLv3
+## squeezelite — GPLv3, and not distributed here
 
-SqeezeAmp ships upstream [squeezelite](https://github.com/ralph-irving/squeezelite)
-as `engine/squeezelite.exe` and runs it as a child process. The binary is
-**unmodified**: SqeezeAmp talks to it only through documented command-line
-arguments and its log output (prd.md §7.3.2).
+SqeezeAmp plays audio by supervising upstream
+[squeezelite](https://github.com/ralph-irving/squeezelite) as a child process
+at `engine/squeezelite.exe`. The binary is **unmodified**: SqeezeAmp talks to
+it only through documented command-line arguments and its log output
+(prd.md §7.3.2).
 
-Obligations that travel with the binary. They are independent of SqeezeAmp's
-own MPL-2.0 and are not discharged by it:
+**No SqeezeAmp artifact contains it.** Neither the installer nor the portable
+zip carries squeezelite, and it is not in this repository. Instead:
 
-- `packaging/licenses/LICENSE.squeezelite` — the full, verbatim GPLv3 text.
-- The exact upstream version shipped, recorded in
-  `packaging/engine-version.txt` with its checksum, so the source that matches
-  the binary can be identified.
-- **The corresponding source, from the same place the binary came from.** Every
-  release that includes `squeezelite.exe` carries the matching upstream source
-  as a release asset, alongside the binary and for as long as the binary is
-  offered.
+- the **installer downloads it during setup**, from upstream, verifying it
+  against a pinned SHA-256 before use;
+- the **portable zip carries `fetch-engine.ps1`**, which does the same thing
+  when the user runs it.
 
-That last point is GPLv3 **§6(d)** — where object code is offered from a network
-location, the source obligation may be met by pointing at a network location
-too. It is used here in preference to §6(b)'s written offer, which would oblige
-a named distributor to answer source requests by post for three years.
+Both read the location out of `packaging/engine-manifest.txt`, which is fetched
+over the network from this project's repository rather than compiled in —
+upstream prunes old builds from SourceForge, so a baked-in URL would eventually
+404 with no way to repair the copies already installed. Editing that one file
+repairs every installer ever shipped.
 
-**The source must be attached, not merely linked, and upstream is the reason.**
-The project develops at <https://github.com/ralph-irving/squeezelite>, which
-carries no releases and **no tags at all** — so there is no upstream artifact
-that corresponds to the version shipped here, and `master` is not one either
-because it moves. The Windows binaries are published separately, on
-[SourceForge](https://sourceforge.net/projects/lmsclients/files/squeezelite/windows/).
-Pointing a recipient at either location would therefore not identify the source
-that matches the binary they were given. Shipping the snapshot as a release
-asset does, and it also satisfies §6(d)'s requirement that the source stay
-available for as long as the binary is — a duty which belongs to whoever ships
-the binary, not to upstream.
+### What that does and does not change
 
-A build that never leaves the machine that produced it incurs none of this.
-GPLv3's obligations attach to distribution, not to use (prd.md §11.1).
+GPLv3's obligations attach to **conveying** the program. An installer that
+fetches a binary from its own author conveys nothing: the recipient obtains
+squeezelite from upstream, on upstream's terms, exactly as if they had clicked
+the link themselves. So SqeezeAmp owes no licence text, no corresponding
+source, and no written offer for squeezelite — the arrangement this project
+previously used, attaching an upstream source snapshot to each release under
+GPLv3 §6(d), is no longer needed and no longer done.
+
+What has **not** changed is the reasoning in prd.md §11.2 about the process
+boundary. SqeezeAmp's own MPL-2.0 depends on squeezelite being a separate
+program communicating at arm's length, so the rules that keep it separate still
+bind: talk to the child only through documented CLI arguments and its log
+output, never patch it, and keep it independently runnable and independently
+obtainable. Downloading it from upstream rather than bundling it makes that
+last point stronger than it was.
+
+### What is done anyway, because it is cheap and honest
+
+- `packaging/licenses/LICENSE.squeezelite` — the full, verbatim GPLv3 text —
+  ships with every artifact, so a user whose installer fetched squeezelite has
+  its terms on disk.
+- Upstream's own `LICENSE.txt` from the downloaded archive is kept beside the
+  binary as `engine/LICENSE.squeezelite.txt`.
+- `packaging/engine-version.txt` records the exact build fetched, with its
+  checksum, so the source that matches it can be identified.
+
+### The version is pinned, and why
+
+`ExternalEngine::applyLogLine()` scrapes squeezelite's log output for engine
+status, and that format is not a stable interface. The manifest may only ever
+be pointed at a build that has been run and checked — `tests/test_externalengine.cpp`
+holds lines captured from exactly the pinned build, and is what says so when
+they stop matching.
 
 ### What is inside that binary
 
-The shipped build reports `WIN PORTAUDIO WINEVENT RESAMPLE FFMPEG OPUS DSD SSL
-LINKALL`, so PortAudio (MIT), FLAC, libmad, faad2, libvorbis, libopus, soxr and
-parts of FFmpeg are statically linked into it by its authors. Those are
-components of *that* program, not of SqeezeAmp — none of them is compiled,
-linked or vendored here. Their corresponding source is part of squeezelite's
-corresponding source, which the release asset above carries.
+The pinned build reports `WIN PORTAUDIO WINEVENT RESAMPLE FFMPEG OPUS OGGMETA
+DSD SSL LINKALL`, so PortAudio (MIT), FLAC, libmad, faad2, libvorbis, libopus,
+soxr and parts of FFmpeg are statically linked into it by its authors. Those
+are components of *that* program, not of SqeezeAmp — none of them is compiled,
+linked or vendored here, and none of them ships in a SqeezeAmp artifact.
 
 This is also why prd.md §14 assumption 4 (the libmad / faad2 licence question)
 is moot under Backend B: nothing in this repository compiles a codec.

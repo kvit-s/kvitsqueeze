@@ -268,8 +268,10 @@ Item {
             Hint {
                 visible: !app.engine.available
                 text: qsTr("No audio engine was found. SqeezeAmp plays through "
-                           + "squeezelite.exe, which the installer stages in the "
-                           + "engine folder next to the application.")
+                           + "squeezelite.exe, which is downloaded rather than "
+                           + "shipped. Run fetch-engine.ps1 from the installation "
+                           + "folder to put one in the engine folder next to the "
+                           + "application.")
             }
 
             // ── Interface (prd.md §9.3, FR-7.1, FR-7.6)

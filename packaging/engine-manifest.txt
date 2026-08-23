@@ -1,0 +1,54 @@
+# Where to fetch the audio engine from.
+#
+# SqeezeAmp does not distribute squeezelite. The installer downloads it, and
+# so does packaging\windows\fetch-engine.ps1 for the portable zip. Nothing in
+# a SqeezeAmp artifact contains GPL-licensed code, so nothing in a SqeezeAmp
+# release carries GPLv3's distribution duties (prd.md 11.1, 11.2).
+#
+# ── Why this file exists separately from the installer
+#
+# Upstream keeps a rolling window of Windows builds on SourceForge and prunes
+# the rest. The build this project pinned first, v1.9.9-1432, is already gone
+# from that directory: it now holds 2.0.0-1585 back to 2.0.0-1518 and one
+# 1.8.4 fossil, nothing else. A URL compiled into a released installer would
+# therefore 404 within a year or two, permanently, with no way to repair the
+# copies already on people's disks.
+#
+# So the installer does not hold the URL. It reads this file over the network:
+#
+#   https://raw.githubusercontent.com/kvit-s/sqeezeamp/main/packaging/engine-manifest.txt
+#
+# Editing the three lines at the bottom and pushing repairs every installer
+# ever shipped, without a new release.
+#
+# ── The rule for editing it
+#
+# Only ever point this at a build that has actually been run, because
+# ExternalEngine::applyLogLine() scrapes a log format that is not a stable
+# interface. packaging/engine-version.txt records the build the captured lines
+# in tests/test_externalengine.cpp came from. These two files normally name
+# the same version, and when they disagree this one is wrong.
+#
+# ── Two facts about the URL, both learned the hard way
+#
+#  * Use master.dl.sourceforge.net. It serves the file to any client. The
+#    downloads.sourceforge.net and sourceforge.net/projects/.../download
+#    forms return an HTML "your download will start shortly" interstitial to
+#    anything with a browser-shaped User-Agent, and a 135 KB HTML page that
+#    fails a checksum is a much more confusing failure than a 404.
+#  * The download is a .zip, not a bare .exe, and the executable inside is
+#    named for the build variant rather than "squeezelite.exe". Both the
+#    installer and fetch-engine.ps1 rename it on the way out, because
+#    ExternalEngine looks for engine\squeezelite.exe and nothing else.
+#
+# ── Format
+#
+# One "key = value" per line; "#" begins a comment. Deliberately not JSON:
+# the Inno Setup installer parses this in Pascal and fetch-engine.ps1 parses
+# the same bytes in PowerShell, so the format has to be trivial in both.
+
+version    = 2.0.0-1585
+url        = https://master.dl.sourceforge.net/project/lmsclients/squeezelite/windows/squeezelite-2.0.0-1585-ffmpeg-win64.zip
+sha256     = 457268e601d6e095ca80af06183ff97128a3a2d7a0c96bf22f217056ee36bd0f
+member     = squeezelite-ffmpeg-x64.exe
+member_sha256 = 85ae8e4a491cffbd971f51072dda79a132a74905010d9759cc39e8ea57cf9d0f

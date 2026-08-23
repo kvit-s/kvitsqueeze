@@ -27,9 +27,12 @@ constexpr int kFailuresBeforeGivingUp = 5;
 // arrives and is raised well above the 2 MB default so a whole track lands
 // before anything can be paused; see buildArguments() for why that matters.
 // The output half is left at the stock value — it holds decoded audio, and
-// nothing here has any reason to second-guess it.
+// nothing here has any reason to second-guess it. "Stock" is a moving target:
+// the pinned engine prints its own default in `-?`, and it moved from 3763 to
+// 3445 between v1.9.9-1432 and 2.0.0-1585. Follow it rather than freezing an
+// old default that nothing upstream is testing any more.
 constexpr int kStreamBufferKb = 32768;
-constexpr int kOutputBufferKb = 3763;
+constexpr int kOutputBufferKb = 3445;
 
 // squeezelite names its decoders by a single character in the log. This is the
 // mapping upstream's own registration lines print at startup ("using mad to

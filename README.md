@@ -217,18 +217,35 @@ menu to actually stop it.
 
 SqeezeAmp does not decode anything itself. It supervises a **stock, unmodified
 `squeezelite.exe`** as a child process and talks to it only through documented
-command-line arguments and its log output. That binary is GPLv3 and is
-deliberately **not** committed to this repository.
+command-line arguments and its log output. That binary is GPLv3, is
+deliberately **not** committed to this repository, and is **not distributed
+with SqeezeAmp**: the installer downloads it from upstream during setup, and
+the portable zip carries `fetch-engine.ps1`, which does the same when you run
+it.
 
-To get playback working:
+For a development build, get one the same way:
 
-1. Obtain a Windows build of squeezelite. Upstream is
-   [ralph-irving/squeezelite](https://github.com/ralph-irving/squeezelite); its
-   Windows builds are published at
-   [sourceforge.net/projects/lmsclients](https://sourceforge.net/projects/lmsclients/files/squeezelite/windows/).
-2. Put it at `packaging\windows\squeezelite.exe` (gitignored), or point
-   `SQZ_ENGINE_EXE` at it.
-3. Run `win-deploy.bat`, which stages it into `engine\` beside the application.
+```bat
+powershell -ExecutionPolicy Bypass -File packaging\windows\fetch-engine.ps1 -DestDir packaging\windows
+win-deploy.bat
+```
+
+Or put your own copy at `packaging\windows\squeezelite.exe` (gitignored), or
+point `SQZ_ENGINE_EXE` at it. Either way `win-deploy.bat` stages it into
+`engine\` beside the application so the tree runs from Explorer, and
+`win-package.bat` then removes it, because neither shipped artifact may carry
+it.
+
+**Where it is downloaded from is not baked into the installer.** It comes from
+[`packaging/engine-manifest.txt`](packaging/engine-manifest.txt), read over the
+network from this repository, because upstream keeps only a rolling window of
+Windows builds on
+[SourceForge](https://sourceforge.net/projects/lmsclients/files/squeezelite/windows/)
+and prunes the rest — the build this project first pinned is already gone from
+there. Editing that one file repairs installers that have already shipped,
+without a new release. A failed download is never a failed install: setup
+completes, and the app reports that no engine is present and names the script
+that fetches one.
 
 The version that was tested, with its checksum, is pinned in
 [`packaging/engine-version.txt`](packaging/engine-version.txt). Treat an engine
@@ -303,11 +320,12 @@ distributed under GPLv3.
 
 The rest:
 
-- The bundled `squeezelite.exe` is **GPLv3**, so any distributed build carries
-  its licence text (`packaging/licenses/`, and `CMakeLists.txt` refuses to
-  configure without it) and its corresponding source, attached to the same
-  release as the binary. That is GPLv3 §6(d) — source from a network location,
-  since the binary comes from one — rather than §6(b)'s written offer.
+- The `squeezelite.exe` SqeezeAmp drives is **GPLv3**, and SqeezeAmp does not
+  distribute it — the installer fetches it from upstream, so there is no
+  corresponding source to attach to a release and no written offer to make.
+  Its licence text ships anyway (`packaging/licenses/`, and `CMakeLists.txt`
+  refuses to configure without it), so a user whose installer fetched the
+  engine has its terms on disk.
 - Qt is used under **LGPLv3**, which is why the Qt libraries ship as separate
   DLLs and are never linked statically: you must be able to relink against your
   own Qt build.

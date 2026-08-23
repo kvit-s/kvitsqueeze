@@ -30,7 +30,9 @@ windeploy.log
 # Anchored with a leading slash. Unanchored, `engine/` matches at any depth
 # and silently swallows src/engine/ — the whole audio-engine module.
 /engine/
-packaging/windows/squeezelite.exe
+packaging/windows/squeezelite*.exe
+# fetch-engine.ps1 drops upstream's licence text beside whatever it downloads.
+packaging/windows/LICENSE.squeezelite.txt
 
 # Qt Creator
 *.pro.user

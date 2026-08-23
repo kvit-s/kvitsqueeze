@@ -84,7 +84,10 @@ jobs:
           path: build-windows-ci/Testing/Temporary/LastTest.log
           if-no-files-found: ignore
 
-# Deliberately absent: win-deploy.bat and win-package.bat. Both need
-# squeezelite.exe, which is not in this repository on purpose, and fetching a
-# GPLv3 binary in CI raises a distribution question that a build check has no
-# business answering. This job builds and tests; it does not package.
+# Deliberately absent: win-deploy.bat and win-package.bat. Packaging pulls the
+# Qt runtime and compiles an installer, neither of which a build check needs to
+# prove, and the artifacts it produces would invite being mistaken for a
+# release. This job builds and tests; it does not package.
+#
+# Note the engine is no longer a reason to skip them: squeezelite is downloaded
+# at install time rather than bundled, so nothing here fetches a GPLv3 binary.

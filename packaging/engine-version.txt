@@ -1,4 +1,4 @@
-# The squeezelite build SqeezeAmp ships as its audio engine.
+# The squeezelite build SqeezeAmp is tested against.
 #
 # Pinned rather than "whatever was current": the log format this app scrapes
 # for engine status is not a stable interface (prd.md §7.3.4), so an engine
@@ -6,27 +6,46 @@
 # tests/test_externalengine.cpp holds captured lines from exactly this build;
 # if they stop matching after an upgrade, that test is the thing that says so.
 #
-# The binary itself is not committed (see .gitignore). Put it at
-# packaging\windows\squeezelite.exe, or point SQZ_ENGINE_EXE at it, and
-# win-deploy.bat stages it into engine\ beside the application.
+# The binary is neither committed nor shipped. It is fetched at install time
+# from the location in packaging/engine-manifest.txt — see that file for why
+# the URL lives there and not in the installer. For a development build, put
+# a copy at packaging\windows\squeezelite.exe (or point SQZ_ENGINE_EXE at
+# one), or run packaging\windows\fetch-engine.ps1, and win-deploy.bat stages
+# it into engine\ beside the application.
 
-version: v1.9.9-1432
-sha256:  1eaedc82174c76ad363b4f70b1a480a2c7f9c66f51fb56f6065bc403f2511ebb
+version: 2.0.0-1585
+archive: squeezelite-2.0.0-1585-ffmpeg-win64.zip
+sha256:  457268e601d6e095ca80af06183ff97128a3a2d7a0c96bf22f217056ee36bd0f
+member:  squeezelite-ffmpeg-x64.exe
+sha256:  85ae8e4a491cffbd971f51072dda79a132a74905010d9759cc39e8ea57cf9d0f
 source:  https://github.com/ralph-irving/squeezelite
-build:   WIN PORTAUDIO WINEVENT RESAMPLE FFMPEG OPUS DSD SSL LINKALL
+build:   WIN PORTAUDIO WINEVENT RESAMPLE FFMPEG OPUS OGGMETA DSD SSL LINKALL
 
-# Notes on this build, confirmed by running it:
+# Notes on this build, confirmed by running it against the development server:
 #
 #  * It is self-contained — PortAudio is linked in, so there is no DLL to ship
 #    alongside it.
 #  * `-a <latency>:<exclusive>` is present, which is what settled prd.md §14
 #    assumption 7 and kept Backend B viable (prd.md §7.3.2).
-#  * Codecs registered at startup: flac, pcm/aif, mp3 (mad), aac (faad),
-#    ogg (vorbis), ops (opus), alac and wma (ffmpeg), dsf/dff (dsd) — which
-#    covers prd.md FR-2.1 in full.
+#  * `-R` still takes the (quality)(phase)(exception) recipe ExternalEngine
+#    builds; 2.0.0 adds a `q` quality and an `X` async flag, neither used.
+#  * Codecs registered at startup: dsd (dsf/dff), ffmpeg (alac, wma), faad
+#    (aac), vorbis (ogg), opus (ops), flac (ogf/flc), pcm (aif/pcm) and mad
+#    (mp3) — which covers prd.md FR-2.1 in full.
+#  * Every line ExternalEngine::applyLogLine() matches was re-captured from
+#    this build and is unchanged apart from source line numbers, which none of
+#    the patterns depend on. The device-open failure that FR-2.5 exists for
+#    still reads `_pa_open:399 error opening device 11 - <name> [<api>] :
+#    Invalid sample rate`, and `-l` still prints `  11 - <name> [<api>]`.
 #
-# Distribution obligation: this binary is GPLv3. Shipping it requires its
-# licence text to travel with it, and its corresponding source to be attached
-# to the same release (GPLv3 §6(d) - upstream publishes no tags or releases,
-# so there is nothing to link to that matches this build). That is independent
-# of SqeezeAmp's own MPL-2.0 (prd.md §11.2). See THIRD-PARTY-NOTICES.md.
+# ── What changed from the previously pinned v1.9.9-1432
+#
+#  * `-b`'s stock default moved from 2048:3763 to 2048:3445. ExternalEngine
+#    sets the stream half deliberately and follows the stock value for the
+#    output half, so kOutputBufferKb moved with it.
+#  * The build options gained OGGMETA.
+#  * v1.9.9-1432 was re-pinned because upstream had removed it from
+#    SourceForge entirely, not because anything was wrong with it.
+#
+# Distribution: this binary is GPLv3, and SqeezeAmp does not distribute it.
+# See THIRD-PARTY-NOTICES.md for what that does and does not oblige.

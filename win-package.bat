@@ -7,7 +7,9 @@ rem   win-package.bat zip    portable zip only
 rem
 rem Both are built from the tree win-deploy.bat staged, so what ships is
 rem exactly what was run and tested from that directory — the same executable,
-rem the same Qt DLLs, the same audio engine, the same licence payload.
+rem the same Qt DLLs, the same licence payload. The audio engine is the one
+rem thing that does not ship; it is downloaded at install time instead, and
+rem removed from the packaged tree below.
 rem
 rem prd.md NFR-8: one documented command produces the installer. This is it.
 setlocal enabledelayedexpansion
@@ -40,16 +42,20 @@ if not exist "%STAGE%\sqeezeamp.exe" (
     exit /b 1
 )
 
-rem The licence payload is a distribution obligation, not a nicety: the GPLv3
-rem engine binary may not ship without it (prd.md §11.2).
+rem The licence payload is a distribution obligation, not a nicety: MPL-2.0
+rem obliges every artifact to carry LICENSE, and the notices name what the
+rem installer will go and fetch (prd.md §11.2).
 if not exist "%STAGE%\licenses\LICENSE.squeezelite" (
     echo win-package: the licence payload is missing from %STAGE%\licenses.
     echo win-package: run win-deploy.bat, which stages it.
     exit /b 1
 )
-if not exist "%STAGE%\engine\squeezelite.exe" (
-    echo win-package: no audio engine staged — the package would not play.
-    echo win-package: see packaging\engine-version.txt.
+rem The engine is deliberately absent from both artifacts, so what has to be
+rem present instead is the script that fetches it. A portable zip without it is
+rem a dead end for whoever unpacks it.
+if not exist "%STAGE%\fetch-engine.ps1" (
+    echo win-package: fetch-engine.ps1 is missing from %STAGE%.
+    echo win-package: run win-deploy.bat, which stages it.
     exit /b 1
 )
 
@@ -69,6 +75,12 @@ if errorlevel 8 (
     echo win-package: could not assemble %PKGDIR%
     exit /b 1
 )
+
+rem squeezelite is GPLv3 and is not distributed (THIRD-PARTY-NOTICES.md). A
+rem development tree has one staged so the app runs from Explorer; neither the
+rem zip nor the installer may carry it. Removed after the mirror rather than
+rem excluded from it, so a copy left by an earlier run goes too.
+if exist "%PKGDIR%\engine" rmdir /s /q "%PKGDIR%\engine"
 
 rem ── Portable zip.
 rem
