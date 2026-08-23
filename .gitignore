@@ -58,3 +58,13 @@ Thumbs.db
 
 # Packaging outputs
 dist/
+
+# Working documents, deliberately not published.
+#
+# The specification, the progress log and the launch checklist stay local: they
+# are the project's internal record, and they carry network and library detail
+# that has no reason to be public. Source comments still cite them by
+# requirement id (FR-x.y, NFR-n, Nn, Dn) — see CONTRIBUTING.md, which restates
+# every invariant a contributor actually needs.
+spec/
+CLAUDE.md

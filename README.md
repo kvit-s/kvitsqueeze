@@ -11,10 +11,21 @@ hardware Squeezeboxes, other squeezelite instances, bridges — are not listed,
 not selectable, and not controllable. This is a music player for this PC, not a
 remote control for the house.
 
-See [`prd.md`](prd.md) for what it is and is not, and
-[`prd-progress.md`](prd-progress.md) for what is actually verified today.
-Short version: it browses, queues and plays against a real server; most of the
-Windows integration is built but has not been exercised by hand.
+**Status: it works, and it is not finished being checked.** It browses, queues
+and plays against a real server, and the protocol, reconciliation and engine
+seams are covered by tests. Most of the Windows integration — tray, media keys,
+SMTC, taskbar buttons — is built but has not been exercised by hand, and the
+long-running behaviour (a 12-hour soak, a server restart, a DAC unplugged
+mid-track) has code and no evidence. Treat it as a working beta rather than a
+finished product.
+
+**Scope, in one paragraph.** My Music only: no plugins, no radio, no podcasts,
+no favourites — with one deliberate exception, the server's own Random Mix. One
+player, itself, with no switcher and no sync groups. No network control surface
+of any kind. Audio through the shared Windows mixer so everything else stays
+audible. These are decisions rather than gaps, and
+[`CONTRIBUTING.md`](CONTRIBUTING.md) explains each one and what would have to
+change to reopen it.
 
 ---
 
@@ -148,8 +159,8 @@ sqz-remote.au3 next          also: previous, playpause, stop, activate
 Both routes end at the same place — the single-instance named pipe,
 `\\.\pipe\SqeezeAmp-instance-<username>`, which accepts those five verbs and
 ignores everything else. It is the app's only listening endpoint and it is
-**not** a socket, which is what keeps the no-remote-control rule (prd.md N7)
-intact. Two consequences worth knowing:
+**not** a socket, which is what keeps the no-remote-control rule intact. Two
+consequences worth knowing:
 
 - The pipe is per-user, so anything running as you can send a verb. That is the
   same trust boundary as you pressing a media key, and it is the whole of the
@@ -263,12 +274,32 @@ tools/          check-layering.py — the module graph, enforced
 
 Includes only ever point downward, and three ownership rules that the compiler
 cannot express are enforced by `tools/check-layering.py`, which runs as a test.
-[`CLAUDE.md`](CLAUDE.md) is the working guide: the traps, the invariants, and
-where a new file goes.
+[`CONTRIBUTING.md`](CONTRIBUTING.md) is the working guide: the settled scope,
+the invariants, the traps, and where a new file goes.
 
 ## Licensing
 
-Not settled yet — see [`prd.md`](prd.md) §11 and Q7. What *is* settled:
+**SqeezeAmp is [MPL-2.0](LICENSE).** The licence covers every file in this
+repository; source files carry an `SPDX-License-Identifier: MPL-2.0` line, and
+MPL Exhibit A's `LICENSE`-file fallback covers the few that do not (the build
+scripts, the packaging inputs, and the documents).
+
+MPL is file-level copyleft: a Larger Work built around these files can carry
+whatever terms you like, but modifications to *these* files stay under MPL. That
+is deliberate. The complaint this project was started over is a player UI
+nobody can fix, extend or theme; this is the licence that makes sure this one
+never becomes that.
+
+Exhibit B, the "Incompatible With Secondary Licenses" notice, is **not** used
+anywhere and must not be added. Without it, MPL-2.0 §3.3 lets these files also
+be distributed under a Secondary License — GPLv2-or-later, LGPLv2.1-or-later or
+AGPLv3 — when combined with a work governed by one. That is what keeps an
+otherwise awkward question academic rather than risky: whether supervising a
+GPLv3 `squeezelite.exe` as a child process makes one work or two has no settled
+answer, and if it were ever held to be one work, the combination can simply be
+distributed under GPLv3.
+
+The rest:
 
 - The bundled `squeezelite.exe` is **GPLv3**, and any distributed build must
   carry its licence text and a written offer for its source. Both live in
