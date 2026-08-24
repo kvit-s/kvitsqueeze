@@ -90,7 +90,7 @@ changes; ordinary rebuilds just overwrite `sqeezeamp.exe` in place.
 
 SqeezeAmp supervises a stock `squeezelite.exe` as a child process. It is
 neither committed to this repository nor shipped in a release — see
-[The audio engine](README.md#the-audio-engine) in the README for what users get
+[Audio engine](README.md#audio-engine) in the README for what users get
 and why. For a development build, fetch one with the same script the portable
 zip carries:
 
