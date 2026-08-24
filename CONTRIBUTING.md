@@ -142,7 +142,8 @@ without a reload and without fighting local state.
 
 ## Building and testing
 
-See the [README](README.md) for toolchain requirements. In short:
+[`devel.md`](devel.md) is the full guide — toolchain, packaging, and the source
+layout. In short:
 
 ```bat
 win-build.bat            configure + build (Release)

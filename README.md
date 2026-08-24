@@ -15,13 +15,34 @@ hardware Squeezeboxes, other squeezelite instances, bridges — are not listed,
 not selectable, and not controllable. This is a music player for this PC, not a
 remote control for the house.
 
-**Status: it works, and it is not finished being checked.** It browses, queues
-and plays against a real server, and the protocol, reconciliation and engine
-seams are covered by tests. Most of the Windows integration — tray, media keys,
-SMTC, taskbar buttons — is built but has not been exercised by hand, and the
-long-running behaviour (a 12-hour soak, a server restart, a DAC unplugged
-mid-track) has code and no evidence. Treat it as a working beta rather than a
-finished product.
+**Status: a working beta.** It browses, queues and plays against a real server,
+and the protocol, reconciliation and engine seams are covered by tests. Most of
+the Windows integration — tray, media keys, SMTC, taskbar buttons — is built but
+has not been exercised by hand, and the long-running behaviour (a 12-hour soak,
+a server restart, a DAC unplugged mid-track) has code behind it but no evidence.
+
+## Why this instead of Squeezelite-X?
+
+Squeezelite-X is the tool this was written to replace, and it is worth being
+precise about which half of it. It is a closed-source Windows shell that bundles
+the same `squeezelite` audio engine SqeezeAmp drives, and then hosts the
+server's own web UI — Material Skin — inside an embedded browser control.
+
+**The audio half of that stack is genuinely good.** squeezelite is mature,
+gapless, and has had a decade of field testing. SqeezeAmp does not try to
+improve on it; it drives the same binary. The UI half is the part worth
+replacing.
+
+| | Squeezelite-X | SqeezeAmp |
+|---|---|---|
+| The interface | The server's web page in an embedded browser, with the latency and scroll feel that implies | Native Qt 6 / QML, drawn by the application |
+| Source | Closed — you cannot fix it, theme it, or contribute to it | MPL-2.0, all of it, including the UI |
+| Player and interface | Two loosely coupled pieces, so device changes, volume and player state do not always behave as one app | One process — transport, volume and output device are the same program |
+| Windows integration | Media keys, tray, taskbar and per-app volume behave inconsistently | Built as first-class: tray, SMTC, media keys, taskbar buttons, per-app volume |
+| Scope | Everything the web UI can reach — plugins, radio, podcasts, favourites | My Music only, deliberately |
+
+**That last row is a trade, not a boast.** If you live in radio, podcasts or
+plugin menus, Squeezelite-X reaches things SqeezeAmp will not.
 
 **Scope, in one paragraph.** My Music only: no plugins, no radio, no podcasts,
 no favourites — with one deliberate exception, the server's own Random Mix. One
@@ -33,83 +54,112 @@ change to reopen it.
 
 ---
 
-## What you need
+## Install
+
+You need 64-bit Windows 10 or 11, and an LMS somewhere on your network. Nothing
+else — no Qt, no Visual Studio, no separate squeezelite download.
+
+### 1. Download
+
+Go to the [**latest release**](https://github.com/kvit-s/sqeezeamp/releases/latest)
+and take one of:
 
 | | |
 |---|---|
-| **Windows 10/11 x64** | The only supported target. The code stays portable, but nothing else is built or tested. |
-| **Qt 6.10.1, `msvc2022_64`** | Modules: Core, Gui, Quick, QuickControls2, Widgets, Network, Concurrent, Test, QuickTest. |
-| **Visual Studio 2022** | Community is fine. The build uses the CMake that ships inside it. |
-| **Python 3** | Optional. Only used by the `LayeringGuard` test; without it that one test is skipped with a warning. |
-| **A running LMS** | Anywhere on your network. Developed against Lyrion 9.1.0 running as a Home Assistant add-on. |
-| **`squeezelite.exe`** | Not included — see [The audio engine](#the-audio-engine) below. Without it the app builds, runs and browses, but will not play. |
+| `SqeezeAmp-<version>-setup.exe` | The installer. Defaults to a per-user install, which needs **no administrator rights**. |
+| `SqeezeAmp-<version>-windows-x64.zip` | Portable. Unpack it anywhere and run it. See [below](#or-the-portable-zip). |
+| `SHA256SUMS-windows.txt` | Checksums for both, if you want to verify what you downloaded. |
 
-Both toolchain paths can be overridden in the environment if yours differ:
+To check the download — worth doing, and see the next section for why:
 
-```bat
-set QT_ROOT_DIR=C:\Qt\6.10.1\msvc2022_64
-set VS_CMAKE_DIR=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin
+```powershell
+Get-FileHash .\SqeezeAmp-0.1.0-setup.exe -Algorithm SHA256
 ```
 
-## Build
+Compare the result with the line in `SHA256SUMS-windows.txt`.
 
-From a normal `cmd` prompt at the repository root — no Developer Command
-Prompt needed, the scripts find the toolchain themselves:
+### 2. Windows will warn you, and here is why
 
-```bat
-win-build.bat                 :: configure + build (Release)
-win-build.bat configure       :: configure only
-win-build.bat build           :: build only, skipping the configure step
+**SqeezeAmp is not code-signed.** A code-signing certificate costs a few
+hundred dollars a year, and this is a beta nobody is charging for. That is the
+whole reason, and it means you will see up to three warnings. None of them
+means anything is wrong; all of them mean the same thing, which is that Windows
+does not recognise the publisher.
+
+**Your browser, at download time.** Edge and Chrome flag executables that few
+people have downloaded. Edge says *"…isn't commonly downloaded. Make sure you
+trust…"* — click the **…** next to the download and choose **Keep**, then
+**Show more** → **Keep anyway** if it asks again.
+
+**SmartScreen, when you run it.** A blue full-window dialog: *"Windows
+protected your PC — Microsoft Defender SmartScreen prevented an unrecognised
+app from starting."* There is no visible Run button. Click **More info**, which
+reveals **Run anyway**.
+
+**Your antivirus, possibly.** A small, brand-new, unsigned installer that
+downloads a second executable is a shape heuristics dislike. If it is
+quarantined, the checksum above is the real integrity check — it is stronger
+evidence than any of these warnings, because it is the one thing an attacker
+who tampered with the file could not reproduce.
+
+If none of that sits comfortably with you, [build it
+yourself](devel.md) — the source here is the whole application.
+
+### 3. Run the installer
+
+The wizard is short:
+
+1. **Install mode**, if it is offered — *Install for me only* is what SqeezeAmp
+   asks for and needs no administrator rights. *Install for all users* will
+   raise a UAC prompt; nothing here needs it.
+2. **Licence** — MPL-2.0, SqeezeAmp's own.
+3. **Destination** — defaults to your per-user programs folder.
+4. **Start Menu folder.**
+5. **Tasks** — three checkboxes:
+   - *Download the audio engine (squeezelite)* — **ticked by default, and you
+     want it.** See [The audio engine](#the-audio-engine) for what this is and
+     why it is a download rather than something in the installer.
+   - *Create a desktop shortcut* — off by default.
+   - *Start SqeezeAmp with Windows, minimised to the tray* — off by default.
+6. **Install** — this is when the engine is fetched, about 2.7 MB, so setup
+   needs a working internet connection at this point. It is verified against a
+   pinned checksum before it is used.
+7. **Finish** — offers to launch the app.
+
+**If the engine download fails**, setup still completes and tells you so. The
+app installs and runs; it will report that no engine is present instead of
+playing. Run `fetch-engine.ps1` from the installation folder once you have a
+connection, and it will do the same job:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File fetch-engine.ps1
 ```
 
-Output lands in `build-windows-msvc-release\Release\sqeezeamp.exe`.
+To uninstall, use **Settings → Apps** or the Start Menu shortcut. Your settings
+and the player's identity are kept on purpose, so reinstalling gets the same
+player back with its server-side queue intact.
 
-> **Close the app before rebuilding.** A locked `sqeezeamp.exe` fails its link
-> with `LNK1104` while everything else succeeds, which leaves a stale
-> executable that looks freshly built.
+### Or the portable zip
 
-## Test
+Windows marks downloaded archives, and that mark is inherited by everything
+extracted from them — which makes the app and its scripts fight you. Clear it
+on the zip **before** extracting:
 
-```bat
-win-test.bat                  :: everything, output to win-test-result.txt
+right-click the `.zip` → **Properties** → tick **Unblock** → **OK**
+
+Then extract it anywhere, and from the extracted folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File fetch-engine.ps1
 ```
 
-**Read `win-test-result.txt`, not the console.** Piping ctest through another
-process leaves stdout fully buffered, so output vanishes on a crash and
-phantom failures appear.
+That downloads the audio engine into `engine\` beside the application — the
+zip does not carry one, for the reasons in [The audio
+engine](#the-audio-engine). Then run `sqeezeamp.exe`.
 
-Two labels, both run by the script:
+---
 
-- **`unit`** — deterministic. No display, no network, no child processes.
-  Covers the protocol vocabulary, reply parsing, the engine's command line and
-  log scraping, and the two rules that matter most: that no request can escape
-  with another player's id, and that the server wins a conflict within 500 ms.
-- **`shell`** — needs a QML engine and a window. Loads the real `Main.qml`
-  through the real composition root with the session and the audio engine
-  switched off, and instantiates every view.
-
-To run one label, or one test, call `ctest` directly — it lives in
-`%VS_CMAKE_DIR%` beside the CMake the build uses, and needs `%QT_ROOT_DIR%\bin`
-on `PATH` so the test binaries find their Qt DLLs:
-
-```bat
-set PATH=%QT_ROOT_DIR%\bin;%PATH%
-ctest --test-dir build-windows-msvc-release -C Release -L unit --output-on-failure
-ctest --test-dir build-windows-msvc-release -C Release -R LmsSessionTests -V
-```
-
-## Run
-
-Run `win-deploy.bat` **once** after the first build — it copies the Qt runtime
-next to the executable, without which nothing starts — then:
-
-```bat
-win-deploy.bat
-build-windows-msvc-release\Release\sqeezeamp.exe
-```
-
-You only need to repeat the deploy step when the Qt version or the audio engine
-changes; ordinary rebuilds just overwrite `sqeezeamp.exe` in place.
+## Using it
 
 ### First run
 
@@ -215,88 +265,44 @@ does not say, the app does not guess.
 Closing the window keeps the player running in the tray. Quit from the tray
 menu to actually stop it.
 
+---
+
 ## The audio engine
 
 SqeezeAmp does not decode anything itself. It supervises a **stock, unmodified
 `squeezelite.exe`** as a child process and talks to it only through documented
-command-line arguments and its log output. That binary is GPLv3, is
-deliberately **not** committed to this repository, and is **not distributed
-with SqeezeAmp**: the installer downloads it from upstream during setup, and
-the portable zip carries `fetch-engine.ps1`, which does the same when you run
-it.
+command-line arguments and its log output. That is the same engine
+Squeezelite-X uses, and it is the part of the stack there was never any reason
+to replace.
 
-For a development build, get one the same way:
-
-```bat
-powershell -ExecutionPolicy Bypass -File packaging\windows\fetch-engine.ps1 -DestDir packaging\windows
-win-deploy.bat
-```
-
-Or put your own copy at `packaging\windows\squeezelite.exe` (gitignored), or
-point `SQZ_ENGINE_EXE` at it. Either way `win-deploy.bat` stages it into
-`engine\` beside the application so the tree runs from Explorer, and
-`win-package.bat` then removes it, because neither shipped artifact may carry
-it.
+**That binary is GPLv3, and SqeezeAmp does not distribute it.** Neither the
+installer nor the portable zip contains it: the installer fetches it from
+upstream during setup, and the zip carries `fetch-engine.ps1`, which does the
+same when you run it. Both verify it against a pinned SHA-256 before use.
 
 **Where it is downloaded from is not baked into the installer.** It comes from
 [`packaging/engine-manifest.txt`](packaging/engine-manifest.txt), read over the
-network from this repository, because upstream keeps only a rolling window of
-Windows builds on
+network from this repository at install time, because upstream keeps only a
+rolling window of Windows builds on
 [SourceForge](https://sourceforge.net/projects/lmsclients/files/squeezelite/windows/)
 and prunes the rest — the build this project first pinned is already gone from
-there. Editing that one file repairs installers that have already shipped,
-without a new release. A failed download is never a failed install: setup
-completes, and the app reports that no engine is present and names the script
-that fetches one.
+there. That means an installer you downloaded a year ago can be repaired by
+updating one file here, instead of being permanently broken by a URL that went
+away.
 
-The version that was tested, with its checksum, is pinned in
-[`packaging/engine-version.txt`](packaging/engine-version.txt). Treat an engine
-upgrade as a change with a test pass behind it: `ExternalEngine::applyLogLine()`
-scrapes a log format that upstream makes no promises about, and
-`ExternalEngineTests` holds lines captured from the pinned build so a change
-shows up as a red test rather than as an empty diagnostics panel.
+The build that was tested, with its checksum, is pinned in
+[`packaging/engine-version.txt`](packaging/engine-version.txt).
 
 Audio plays through the **shared** Windows mixer by design, so other
 applications stay audible and Windows handles any sample-rate conversion. An
 exclusive-mode toggle exists in Settings; turning it on silences every other
 application on the PC.
 
-## Package
+## Building from source
 
-```bat
-win-deploy.bat                :: stage Qt, the audio engine and the licences
-win-package.bat               :: portable zip + installer  → dist\
-win-package.bat zip           :: portable zip only
-```
-
-`win-deploy.bat` runs `windeployqt` and copies the engine and the licence files
-into the build output, which is also what makes the executable runnable from
-Explorer. `win-package.bat` then builds:
-
-- `dist\SqeezeAmp-<version>-windows-x64-portable.zip`
-- `dist\SqeezeAmp-<version>-setup.exe`, if
-  [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed — otherwise it
-  builds the zip and says so.
-
-Both come from the same staged tree, so what ships is what you ran.
-
-## Layout
-
-```
-src/protocol/   pure LMS protocol — requests, replies, the command vocabulary
-src/session/    the live connection; the only module that links Qt Network
-src/engine/     the audio engine behind IAudioEngine; the only module with QProcess
-src/app/        orchestration and the QML-facing models
-src/qml/        QML type registrations, the composition root, Windows integration
-qml/            the shell's .qml files, shipped via resources.qrc
-tests/          Qt Test; the `unit` and `shell` labels
-tools/          check-layering.py — the module graph, enforced
-```
-
-Includes only ever point downward, and three ownership rules that the compiler
-cannot express are enforced by `tools/check-layering.py`, which runs as a test.
-[`CONTRIBUTING.md`](CONTRIBUTING.md) is the working guide: the settled scope,
-the invariants, the traps, and where a new file goes.
+See [**`devel.md`**](devel.md) — toolchain, build, test, packaging and the
+source layout. [`CONTRIBUTING.md`](CONTRIBUTING.md) is the working guide: the
+settled scope decisions, the module boundary, the invariants and the traps.
 
 ## Licensing
 
