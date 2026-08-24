@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(kvitsqueeze VERSION 0.1.0 LANGUAGES CXX)
+project(kvitsqueeze VERSION 0.1.1 LANGUAGES CXX)
 
 # The full SemVer string the binary reports, prerelease suffix included.
 # PROJECT_VERSION carries the three numeric components only, because CMake
@@ -12,7 +12,14 @@ if(NOT SQZ_VERSION_FULL MATCHES "^${PROJECT_VERSION}([-+].+)?$")
     message(FATAL_ERROR
         "SQZ_VERSION_FULL ('${SQZ_VERSION_FULL}') must be PROJECT_VERSION "
         "('${PROJECT_VERSION}') optionally followed by a '-prerelease' or "
-        "'+build' suffix.")
+        "'+build' suffix.\n"
+        # Almost always this, and the message above does not say so: raising the
+        # version in project() leaves the *cached* SQZ_VERSION_FULL at the old
+        # value, so the first configure after a version bump fails with two
+        # numbers that both look right.
+        "If you have just changed the version in project(), this is the stale "
+        "cache entry: delete the build directory, or reconfigure with "
+        "-DSQZ_VERSION_FULL=${PROJECT_VERSION}.")
 endif()
 
 # Where this build's own source can be had. MPL-2.0 §3.2(a) requires a build
