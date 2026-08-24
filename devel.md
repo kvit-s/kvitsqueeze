@@ -154,3 +154,42 @@ Includes only ever point downward, and three ownership rules the compiler
 cannot express are enforced by `tools/check-layering.py`, which runs as a test.
 [`CONTRIBUTING.md`](CONTRIBUTING.md) explains each one, and where a new file
 goes.
+
+## Licensing, in the detail a contributor needs
+
+The short version is in the [README](README.md#licence). The parts that affect
+what you may write here:
+
+**SqeezeAmp is [MPL-2.0](LICENSE).** Source files carry an
+`SPDX-License-Identifier: MPL-2.0` line, and MPL Exhibit A's `LICENSE`-file
+fallback covers the few that do not — the build scripts, the packaging inputs
+and the documents.
+
+MPL is file-level copyleft: a Larger Work built around these files can carry
+whatever terms you like, but modifications to *these* files stay under MPL.
+
+**Exhibit B, the "Incompatible With Secondary Licenses" notice, is not used
+anywhere and must not be added.** Without it, MPL-2.0 §3.3 lets these files also
+be distributed under a Secondary License — GPLv2-or-later, LGPLv2.1-or-later or
+AGPLv3 — when combined with a work governed by one. That is what keeps an
+otherwise awkward question academic rather than risky: whether supervising a
+GPLv3 `squeezelite.exe` as a child process makes one work or two has no settled
+answer, and if it were ever held to be one work, the combination can simply be
+distributed under GPLv3.
+
+**The engine is GPLv3 and is not distributed.** The installer fetches it from
+upstream, so there is no corresponding source to attach to a release and no
+written offer to make. Its licence text ships anyway — `packaging/licenses/`,
+and `CMakeLists.txt` refuses to configure without it — so a user whose installer
+fetched the engine has its terms on disk. What keeps this arrangement intact is
+the arm's-length rule: talk to the child only through documented arguments and
+its log output, and never patch it.
+
+**Qt is used under LGPLv3**, which is why the Qt libraries ship as separate DLLs
+and are never linked statically: a user must be able to relink against their own
+Qt build. No static Qt in a shipped installer.
+
+A build that never leaves the machine that produced it owes none of this.
+GPLv3's obligations attach to distribution, not to use.
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) is the file that has to stay
+true when any of it changes.
