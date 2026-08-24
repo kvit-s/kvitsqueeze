@@ -1,4 +1,4 @@
-# Contributing to SqeezeAmp
+# Contributing to KvitSqueeze
 
 Bug reports, fixes and questions are welcome. Please read the first section
 before opening a feature request — this project has a deliberately narrow scope,
@@ -20,7 +20,7 @@ open an issue or a discussion instead, and say what changed.
 
 ### One player: itself
 
-SqeezeAmp controls exactly one player — the one this process registers on the
+KvitSqueeze controls exactly one player — the one this process registers on the
 server. There is no player list, no switcher, and no sync groups. Other players
 are ignored even when they arrive in a server notification.
 
@@ -116,7 +116,7 @@ the entire interface to the child process — arguments out, status in — is
 testable without launching anything.
 
 **Never patch the squeezelite binary.** Talking to it only through documented
-arguments and log output is what keeps SqeezeAmp's own licence unconstrained,
+arguments and log output is what keeps KvitSqueeze's own licence unconstrained,
 and patching it would silently change the log format the status scraper reads.
 The binary is not shipped either — the installer downloads it from upstream —
 which makes "stock and independently obtainable" a fact rather than a promise.
@@ -156,7 +156,7 @@ Things that will cost you an hour if nobody mentions them:
 - **Read `win-test-result.txt`, not the console.** Piping ctest output through
   another process leaves stdout fully buffered, so output vanishes on a crash
   and phantom failures appear.
-- **Close the running app before rebuilding.** A locked `sqeezeamp.exe` fails
+- **Close the running app before rebuilding.** A locked `kvitsqueeze.exe` fails
   its link with `LNK1104` while everything else succeeds, leaving a stale
   executable that looks freshly built.
 - **`*.bat` files must keep CRLF line endings** (`.gitattributes` enforces it).
@@ -218,7 +218,7 @@ about in an issue, and a good sign this document is missing something.
 
 ## Reporting a bug
 
-Include the SqeezeAmp version, your Lyrion Music Server version, and **the
+Include the KvitSqueeze version, your Lyrion Music Server version, and **the
 output of the copy button on the Diagnostics screen** (Settings →
 Diagnostics). That button exists so a bug report can carry the engine's actual
 state — what it negotiated, what it printed, and what it could not determine.

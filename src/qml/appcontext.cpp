@@ -215,6 +215,6 @@ void AppContext::registerQmlTypes()
     // The `Sqz` module's types are declared in qmlsingletons.h; linking
     // sqz-qml is what makes them available. This hook exists for the
     // registrations that cannot be declarative — there are none yet, and the
-    // function is kept so the call site in SqeezeAmpApplication does not have
+    // function is kept so the call site in KvitSqueezeApplication does not have
     // to appear later.
 }

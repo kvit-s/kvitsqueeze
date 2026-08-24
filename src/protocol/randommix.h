@@ -90,7 +90,7 @@ struct Genre
 // prd.md N4 rules out.
 //
 // Rows carrying no `checkbox` field are the plugin's own "Select All" /
-// "Select None" actions; they are dropped, because SqeezeAmp offers those as
+// "Select None" actions; they are dropped, because KvitSqueeze offers those as
 // its own buttons rather than as rows in a list of genres.
 QList<Genre> genresFromListResult(const QJsonObject &result);
 

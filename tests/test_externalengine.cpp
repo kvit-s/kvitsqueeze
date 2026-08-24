@@ -61,7 +61,7 @@ private:
         EngineConfig config;
         config.serverHost = QStringLiteral("lyrion.local");
         config.playerId = QStringLiteral("aa:bb:cc:dd:ee:ff");
-        config.playerName = QStringLiteral("SqeezeAmp");
+        config.playerName = QStringLiteral("KvitSqueeze");
         return config;
     }
 };
@@ -72,7 +72,7 @@ void TestExternalEngine::buildsAMinimalCommandLine()
 
     QCOMPARE(args.value(args.indexOf("-s") + 1), QStringLiteral("lyrion.local"));
     QCOMPARE(args.value(args.indexOf("-m") + 1), QStringLiteral("aa:bb:cc:dd:ee:ff"));
-    QCOMPARE(args.value(args.indexOf("-n") + 1), QStringLiteral("SqeezeAmp"));
+    QCOMPARE(args.value(args.indexOf("-n") + 1), QStringLiteral("KvitSqueeze"));
 }
 
 void TestExternalEngine::omitsTheDefaultSlimProtoPort()

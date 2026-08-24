@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-// Render packaging/windows/sqeezeamp.ico from AppIcon::application().
+// Render packaging/windows/kvitsqueeze.ico from AppIcon::application().
 //
 // The window and the tray get their icon by painting it at run time
 // (src/qml/appicon.cpp). Explorer, the taskbar button and the Start Menu
@@ -16,7 +16,7 @@
 // after editing appicon.cpp:
 //
 //     cmake --build build-windows-msvc-release --target make-appicon --config Release
-//     build-windows-msvc-release\Release\make-appicon.exe packaging\windows\sqeezeamp.ico
+//     build-windows-msvc-release\Release\make-appicon.exe packaging\windows\kvitsqueeze.ico
 //
 // ── The format
 //

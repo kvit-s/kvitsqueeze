@@ -1,12 +1,12 @@
 name: Feature request
-description: Something SqeezeAmp should do and does not
+description: Something KvitSqueeze should do and does not
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
         Please read the **Settled decisions** section of
-        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) first. SqeezeAmp has a
+        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) first. KvitSqueeze has a
         deliberately narrow scope, and several of the most obvious requests —
         a player switcher, radio and podcasts, a web or network control API —
         are decisions rather than omissions. That does not make them

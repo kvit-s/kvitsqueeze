@@ -14,7 +14,7 @@ namespace {
 // does not break fast user switching.
 QString instanceName()
 {
-    return QStringLiteral("SqeezeAmp-instance-")
+    return QStringLiteral("KvitSqueeze-instance-")
            + QString::fromLocal8Bit(qgetenv("USERNAME")).toLower();
 }
 

@@ -33,7 +33,7 @@ QString logDirectory()
 
 QString logPath()
 {
-    return logDirectory() + QStringLiteral("/sqeezeamp.log");
+    return logDirectory() + QStringLiteral("/kvitsqueeze.log");
 }
 
 const char *levelName(QtMsgType type)
@@ -56,7 +56,7 @@ void rotateIfNeeded()
 
     g_file->close();
 
-    // sqeezeamp.log.4 is dropped, 3 becomes 4, and so on. Renaming from the
+    // kvitsqueeze.log.4 is dropped, 3 becomes 4, and so on. Renaming from the
     // oldest end is what keeps a generation from being overwritten before it
     // has been moved.
     const QString base = logPath();
@@ -131,7 +131,7 @@ void install()
     // The default category, on purpose: this line has to appear even when the
     // rules above have turned every subsystem off, because it is what says the
     // log file is working.
-    qInfo().noquote() << "SqeezeAmp" << QCoreApplication::applicationVersion()
+    qInfo().noquote() << "KvitSqueeze" << QCoreApplication::applicationVersion()
                       << "starting —" << logPath();
 }
 

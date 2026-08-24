@@ -22,7 +22,7 @@ Window {
     minimumWidth: 300
     minimumHeight: 96
     maximumHeight: 140
-    title: qsTr("SqeezeAmp")
+    title: qsTr("KvitSqueeze")
     color: theme.surfaceRaised
     flags: Qt.Window | Qt.WindowStaysOnTopHint | Qt.WindowTitleHint
            | Qt.WindowCloseButtonHint

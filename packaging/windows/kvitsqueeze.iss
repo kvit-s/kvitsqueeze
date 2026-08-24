@@ -1,4 +1,4 @@
-; SqeezeAmp installer — Inno Setup 6 (prd.md §13 Q5).
+; KvitSqueeze installer — Inno Setup 6 (prd.md §13 Q5).
 ;
 ; Portable zip for the beta, this for the release. Built from the staged tree
 ; that win-deploy.bat produces, so the installer ships exactly what was tested
@@ -13,10 +13,10 @@
 ;
 ; ── The audio engine is downloaded, not shipped
 ;
-; squeezelite is GPLv3. SqeezeAmp does not distribute it: this installer
+; squeezelite is GPLv3. KvitSqueeze does not distribute it: this installer
 ; fetches it from upstream during setup, verifies it against a pinned SHA-256,
-; and puts it at {app}\engine\squeezelite.exe. Nothing in a SqeezeAmp artifact
-; contains GPL-licensed code, so nothing in a SqeezeAmp release carries
+; and puts it at {app}\engine\squeezelite.exe. Nothing in a KvitSqueeze artifact
+; contains GPL-licensed code, so nothing in a KvitSqueeze release carries
 ; GPLv3's distribution duties. See THIRD-PARTY-NOTICES.md.
 ;
 ; The download URL is deliberately *not* compiled in here. Upstream keeps only
@@ -28,12 +28,12 @@
 ; that have already shipped.
 ;
 ; The download is never a gate. If it fails — no network, a corporate proxy, a
-; pruned URL, an unchecked task — setup completes anyway and SqeezeAmp
+; pruned URL, an unchecked task — setup completes anyway and KvitSqueeze
 ; installs. The app reports a missing engine and names the repair script.
 
-#define AppName "SqeezeAmp"
-#define AppPublisher "SqeezeAmp"
-#define AppExe "sqeezeamp.exe"
+#define AppName "KvitSqueeze"
+#define AppPublisher "KvitSqueeze"
+#define AppExe "kvitsqueeze.exe"
 
 ; Passed in by win-package.bat; all three have a default so the script can also
 ; be opened and compiled by hand from the Inno Setup IDE.
@@ -47,11 +47,15 @@
 ; editing this file — which is also how the download path gets tested without
 ; publishing anything.
 #ifndef EngineManifestUrl
-  #define EngineManifestUrl "https://raw.githubusercontent.com/kvit-s/sqeezeamp/main/packaging/engine-manifest.txt"
+  #define EngineManifestUrl "https://raw.githubusercontent.com/kvit-s/kvitsqueeze/main/packaging/engine-manifest.txt"
 #endif
 
 [Setup]
-AppId={{7C1B5A64-3E8F-4C2D-9B77-1F4E2A6D0C31}
+; A new AppId for the new name. Keeping the old one would have this installer
+; treat a SqeezeAmp install as its own previous version and replace it in the
+; Apps list, which is wrong: they are different products, and the old one still
+; owns its own uninstaller. Uninstall SqeezeAmp separately.
+AppId={{204278E3-C3B2-4438-858B-7E1CE5C65197}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
@@ -59,14 +63,14 @@ DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 UninstallDisplayIcon={app}\{#AppExe}
 OutputDir=..\..\dist
-OutputBaseFilename=SqeezeAmp-{#AppVersion}-setup
+OutputBaseFilename=KvitSqueeze-{#AppVersion}-setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 ; The engine arrives as a .zip, so the full extractor is needed rather than
 ; Inno's default 7z-only "enhanced" mode.
 ArchiveExtraction=full
-; Per-user by default: SqeezeAmp is a desktop music player, and nothing it does
+; Per-user by default: KvitSqueeze is a desktop music player, and nothing it does
 ; needs administrator rights. Start-with-Windows writes to HKCU (prd.md FR-7.6).
 ;
 ; PrivilegesRequired must say so explicitly — Inno defaults it to `admin`, which
@@ -79,15 +83,15 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-; SqeezeAmp's own licence — MPL-2.0. This used to point at the GPLv3 text that
+; KvitSqueeze's own licence — MPL-2.0. This used to point at the GPLv3 text that
 ; travelled with the engine binary, which asked the user to accept a licence
-; that was never SqeezeAmp's, and is not shipped at all any more.
+; that was never KvitSqueeze's, and is not shipped at all any more.
 LicenseFile={#StageDir}\licenses\LICENSE
 ; The setup program's own icon, and the one shown in Apps & Features. The
-; shortcuts do not need it named: they point at sqeezeamp.exe, which carries the
-; same icon as a resource (packaging/windows/sqeezeamp.rc). Relative paths here
+; shortcuts do not need it named: they point at kvitsqueeze.exe, which carries the
+; same icon as a resource (packaging/windows/kvitsqueeze.rc). Relative paths here
 ; resolve against this script's directory.
-SetupIconFile=sqeezeamp.ico
+SetupIconFile=kvitsqueeze.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -135,7 +139,7 @@ Filename: "{app}\{#AppExe}"; Description: "Start {#AppName}"; Flags: nowait post
 ; executable was renamed after extraction, so Inno has tracked neither.
 Type: filesandordirs; Name: "{app}\engine"
 ; The artwork cache and the logs are ours and are not user data. The player
-; identity and the settings under HKCU\Software\SqeezeAmp are deliberately
+; identity and the settings under HKCU\Software\KvitSqueeze are deliberately
 ; *not* removed: reinstalling should get the same player back, with its
 ; server-side queue and settings intact (prd.md FR-1.4).
 Type: filesandordirs; Name: "{localappdata}\{#AppName}\{#AppName}\cache"
@@ -300,7 +304,7 @@ begin
 
   if not EngineReady then
     SuppressibleMsgBox(
-      'The audio engine could not be downloaded, so SqeezeAmp will install without it.' + #13#10#13#10 +
+      'The audio engine could not be downloaded, so KvitSqueeze will install without it.' + #13#10#13#10 +
       'Everything else works; playback will report that no engine is present. ' +
       'To finish later, run fetch-engine.ps1 from the installation folder once you have a connection.',
       mbInformation, MB_OK, IDOK);

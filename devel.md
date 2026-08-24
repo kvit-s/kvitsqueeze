@@ -1,4 +1,4 @@
-# Building SqeezeAmp
+# Building KvitSqueeze
 
 Everything needed to get from a clone to a running build, and from a running
 build to the two shippable artifacts.
@@ -37,9 +37,9 @@ win-build.bat configure       :: configure only
 win-build.bat build           :: build only, skipping the configure step
 ```
 
-Output lands in `build-windows-msvc-release\Release\sqeezeamp.exe`.
+Output lands in `build-windows-msvc-release\Release\kvitsqueeze.exe`.
 
-> **Close the app before rebuilding.** A locked `sqeezeamp.exe` fails its link
+> **Close the app before rebuilding.** A locked `kvitsqueeze.exe` fails its link
 > with `LNK1104` while everything else succeeds, which leaves a stale
 > executable that looks freshly built.
 
@@ -80,15 +80,15 @@ next to the executable, without which nothing starts — then:
 
 ```bat
 win-deploy.bat
-build-windows-msvc-release\Release\sqeezeamp.exe
+build-windows-msvc-release\Release\kvitsqueeze.exe
 ```
 
 You only need to repeat the deploy step when the Qt version or the audio engine
-changes; ordinary rebuilds just overwrite `sqeezeamp.exe` in place.
+changes; ordinary rebuilds just overwrite `kvitsqueeze.exe` in place.
 
 ## The audio engine, for a development build
 
-SqeezeAmp supervises a stock `squeezelite.exe` as a child process. It is
+KvitSqueeze supervises a stock `squeezelite.exe` as a child process. It is
 neither committed to this repository nor shipped in a release — see
 [Audio engine](README.md#audio-engine) in the README for what users get
 and why. For a development build, fetch one with the same script the portable
@@ -126,8 +126,8 @@ win-package.bat zip           :: portable zip only
 output, which is also what makes the executable runnable from Explorer.
 `win-package.bat` then builds:
 
-- `dist\SqeezeAmp-<version>-windows-x64.zip`
-- `dist\SqeezeAmp-<version>-setup.exe`, if
+- `dist\KvitSqueeze-<version>-windows-x64.zip`
+- `dist\KvitSqueeze-<version>-setup.exe`, if
   [Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed — otherwise it
   builds the zip and says so.
 - `dist\SHA256SUMS-windows.txt`
@@ -160,7 +160,7 @@ goes.
 The short version is in the [README](README.md#licence). The parts that affect
 what you may write here:
 
-**SqeezeAmp is [MPL-2.0](LICENSE).** Source files carry an
+**KvitSqueeze is [MPL-2.0](LICENSE).** Source files carry an
 `SPDX-License-Identifier: MPL-2.0` line, and MPL Exhibit A's `LICENSE`-file
 fallback covers the few that do not — the build scripts, the packaging inputs
 and the documents.

@@ -27,7 +27,7 @@ class PlayerIdentity
 {
 public:
     // The process's player id, loaded on first use and generated + persisted
-    // if this machine has never run SqeezeAmp before.
+    // if this machine has never run KvitSqueeze before.
     static QString mac();
 
     // A locally-administered, unicast MAC: the second-least-significant bit of

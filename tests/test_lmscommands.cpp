@@ -131,7 +131,7 @@ void TestLmsCommands::queueActionsMapToTheRightCommandWord()
 
 void TestLmsCommands::serverStatusAsksForNoPlayerList()
 {
-    // Count 0 means "the server's own fields, no players". SqeezeAmp has no
+    // Count 0 means "the server's own fields, no players". KvitSqueeze has no
     // use for a player list and asking for one is the first step toward
     // showing it (prd.md FR-6.2).
     QCOMPARE(LmsCommand::serverStatus(),

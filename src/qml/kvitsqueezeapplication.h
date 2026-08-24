@@ -25,7 +25,7 @@ class SystemMediaControls;
 class TaskbarButtons;
 class TrayController;
 
-class SqeezeAmpApplication : public QObject
+class KvitSqueezeApplication : public QObject
 {
     Q_OBJECT
 
@@ -40,10 +40,10 @@ public:
     // testing the shipped app's rendering.
     static void chooseSceneGraphBackend();
 
-    explicit SqeezeAmpApplication(QObject *parent = nullptr);
-    ~SqeezeAmpApplication() override;
+    explicit KvitSqueezeApplication(QObject *parent = nullptr);
+    ~KvitSqueezeApplication() override;
 
-    // Single instance (prd.md FR-7.3): returns false if another SqeezeAmp
+    // Single instance (prd.md FR-7.3): returns false if another KvitSqueeze
     // already holds the lock, after sending it `commandIfRunning` — normally
     // "raise your window", but a transport verb when this process was launched
     // only to deliver one (prd.md FR-7.10). Uses a named pipe — never a TCP

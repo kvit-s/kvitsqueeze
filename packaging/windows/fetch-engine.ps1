@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Fetch the audio engine SqeezeAmp drives.
+    Fetch the audio engine KvitSqueeze drives.
 
 .DESCRIPTION
-    SqeezeAmp plays audio by supervising a stock, unmodified squeezelite.exe as
+    KvitSqueeze plays audio by supervising a stock, unmodified squeezelite.exe as
     a child process. That binary is GPLv3 and is deliberately not distributed
-    with SqeezeAmp — see THIRD-PARTY-NOTICES.md. This script downloads it from
+    with KvitSqueeze — see THIRD-PARTY-NOTICES.md. This script downloads it from
     upstream, checks it against the pinned SHA-256, and puts it where
     ExternalEngine looks: engine\squeezelite.exe.
 
@@ -39,7 +39,7 @@
 [CmdletBinding()]
 param(
     [string] $DestDir,
-    [string] $ManifestUrl = 'https://raw.githubusercontent.com/kvit-s/sqeezeamp/main/packaging/engine-manifest.txt',
+    [string] $ManifestUrl = 'https://raw.githubusercontent.com/kvit-s/kvitsqueeze/main/packaging/engine-manifest.txt',
     [string] $ManifestFile,
     [switch] $Offline,
     [switch] $Force
@@ -58,7 +58,7 @@ try {
 
 # Not a browser. SourceForge answers browser-shaped User-Agents with an HTML
 # "your download will start shortly" page instead of the file.
-$UserAgent = 'SqeezeAmp-fetch-engine'
+$UserAgent = 'KvitSqueeze-fetch-engine'
 
 function Read-Manifest {
     $text = $null

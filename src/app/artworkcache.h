@@ -9,7 +9,7 @@
 //
 //   memory   QCache of decoded QImages, bounded in bytes by the setting
 //            (default 64 MB). A grid that scrolls back over itself hits this.
-//   disk     %LOCALAPPDATA%/SqeezeAmp/cache/artwork, bounded by the setting
+//   disk     %LOCALAPPDATA%/KvitSqueeze/cache/artwork, bounded by the setting
 //            (default 256 MB), swept on startup. Survives restarts, so the
 //            second run of the app draws a browsed grid with no network at all.
 //   server   one GET through LmsSession, because that is the only module

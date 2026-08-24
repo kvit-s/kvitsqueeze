@@ -2,13 +2,13 @@
 
 #NoTrayIcon
 ;
-; sqz-remote.au3 — send one transport verb to a running SqeezeAmp.
+; sqz-remote.au3 — send one transport verb to a running KvitSqueeze.
 ;
 ;   sqz-remote.au3 next          also: previous, playpause, stop, activate
 ;   sqz-remote.au3               with no argument, "next"
 ;
 ; Written for a keyboard with no media keys (a Microsoft Sculpt): remap a key
-; to run this, and the key skips a track. `sqeezeamp.exe --next` does the same
+; to run this, and the key skips a track. `kvitsqueeze.exe --next` does the same
 ; thing, but pays a few hundred milliseconds of Qt start-up per press; this
 ; writes to the app's single-instance named pipe directly and is immediate.
 ;
@@ -28,7 +28,7 @@ Global Const $SQZ_DEBUG = False
 Func SqzSend($cmd)
     ; Matches instanceName() in src/qml/singleinstance.cpp — one pipe per user,
     ; so fast user switching gives each session its own player.
-    Local $path = "\\.\pipe\SqeezeAmp-instance-" & StringLower(@UserName)
+    Local $path = "\\.\pipe\KvitSqueeze-instance-" & StringLower(@UserName)
 
     Local $h = DllCall("kernel32.dll", "ptr", "CreateFileW", _
         "wstr",  $path, _
@@ -47,7 +47,7 @@ Func SqzSend($cmd)
         Local $err = DllCall("kernel32.dll", "dword", "GetLastError")
         Return SqzFail("Cannot open " & $path & @CRLF & @CRLF & _
             "GetLastError = " & $err[0] & @CRLF & _
-            "2 = SqeezeAmp is not running, 5 = access denied, 231 = pipe busy")
+            "2 = KvitSqueeze is not running, 5 = access denied, 231 = pipe busy")
     EndIf
 
     ; +1 so the string and its terminator both fit: AutoIt truncates a string
@@ -81,7 +81,7 @@ Func SqzSend($cmd)
 EndFunc
 
 Func SqzFail($message)
-    If $SQZ_DEBUG Then MsgBox(16, "SqeezeAmp", $message)
+    If $SQZ_DEBUG Then MsgBox(16, "KvitSqueeze", $message)
     Return SetError(1, 0, False)
 EndFunc
 

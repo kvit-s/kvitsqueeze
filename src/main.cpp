@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // The launcher. Everything it would otherwise do lives in sqz-core:
-// AppContext composes the player, SqeezeAmpApplication owns the QML engine.
+// AppContext composes the player, KvitSqueezeApplication owns the QML engine.
 // Keep this file a launcher — a second entry point (a test harness, a
 // diagnostics build) should be able to reuse the composition without copying
 // any wiring out of here.
 
 #include "applog.h"
+#include "legacysettings.h"
 #include "singleinstance.h"
-#include "sqeezeampapplication.h"
+#include "kvitsqueezeapplication.h"
 
 // QApplication rather than QGuiApplication: QSystemTrayIcon lives in Widgets
 // and the tray is a P0 requirement (prd.md FR-7.1).
@@ -18,8 +19,8 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    QCoreApplication::setOrganizationName(QStringLiteral("SqeezeAmp"));
-    QCoreApplication::setApplicationName(QStringLiteral("SqeezeAmp"));
+    QCoreApplication::setOrganizationName(QStringLiteral("KvitSqueeze"));
+    QCoreApplication::setApplicationName(QStringLiteral("KvitSqueeze"));
     QCoreApplication::setApplicationVersion(QStringLiteral(SQZ_VERSION));
 
     // The window closing is not the app ending: with close-to-tray on, the
@@ -28,9 +29,14 @@ int main(int argc, char *argv[])
 
     AppLog::install();
 
+    // Before anything reads a setting: carry the pre-rename tree across if this
+    // installation has one. It holds the generated identity the server keys the
+    // queue to, so skipping it would present as a brand-new player.
+    LegacySettings::migrateIfNeeded();
+
     QCommandLineParser parser;
     parser.setApplicationDescription(
-        QStringLiteral("SqeezeAmp — a native Windows player for Lyrion Music Server"));
+        QStringLiteral("KvitSqueeze — a native Windows player for Lyrion Music Server"));
     parser.addHelpOption();
     parser.addVersionOption();
     // Written into the Run key by the start-with-Windows setting (FR-7.6), so
@@ -64,19 +70,19 @@ int main(int argc, char *argv[])
             requested = verb.command;
     }
 
-    SqeezeAmpApplication sqeezeamp;
-    if (!sqeezeamp.claimSingleInstance(requested))
+    KvitSqueezeApplication kvitsqueeze;
+    if (!kvitsqueeze.claimSingleInstance(requested))
         return 0; // the running instance took the command
 
     // Nobody was there to take it. Starting the player because somebody asked
     // it to skip a track would be a surprise — the key was pressed to change
     // what is playing, not to begin playing.
     if (requested != SingleInstance::Command::Activate) {
-        qWarning("SqeezeAmp is not running; nothing to command.");
+        qWarning("KvitSqueeze is not running; nothing to command.");
         return 1;
     }
 
-    if (!sqeezeamp.load(parser.isSet(minimized)))
+    if (!kvitsqueeze.load(parser.isSet(minimized)))
         return 1;
 
     return app.exec();

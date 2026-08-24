@@ -240,7 +240,7 @@ Item {
                 onToggled: app.settings.exclusiveOutput = checked
             }
             Hint {
-                text: qsTr("SqeezeAmp shares the audio device by default, so other "
+                text: qsTr("KvitSqueeze shares the audio device by default, so other "
                            + "applications stay audible and Windows handles any "
                            + "sample-rate conversion. Exclusive mode takes the device "
                            + "over completely and silences every other application "
@@ -267,7 +267,7 @@ Item {
 
             Hint {
                 visible: !app.engine.available
-                text: qsTr("No audio engine was found. SqeezeAmp plays through "
+                text: qsTr("No audio engine was found. KvitSqueeze plays through "
                            + "squeezelite.exe, which is downloaded rather than "
                            + "shipped. Run fetch-engine.ps1 from the installation "
                            + "folder to put one in the engine folder next to the "
@@ -316,7 +316,7 @@ Item {
             Hint {
                 visible: !shell.mediaKeysHeld
                 text: qsTr("Windows gave at least one media key to another "
-                           + "application. Close it and restart SqeezeAmp to take "
+                           + "application. Close it and restart KvitSqueeze to take "
                            + "the keys back.")
             }
 
@@ -439,7 +439,7 @@ Item {
             }
 
             Hint {
-                text: qsTr("Scanning is the server's job. SqeezeAmp only asks it to "
+                text: qsTr("Scanning is the server's job. KvitSqueeze only asks it to "
                            + "start; tag editing and file management are not part of "
                            + "this application.")
             }
@@ -510,8 +510,8 @@ Item {
                 color: theme.textMuted
                 font.pixelSize: theme.fontSmall
                 textFormat: Text.PlainText
-                text: qsTr("SqeezeAmp %1 — a native player for Lyrion Music Server.\n\n"
-                           + "SqeezeAmp is free software under the Mozilla Public "
+                text: qsTr("KvitSqueeze %1 — a native player for Lyrion Music Server.\n\n"
+                           + "KvitSqueeze is free software under the Mozilla Public "
                            + "License v2, whose text is in the licenses folder next "
                            + "to the application. Its source is at %3\n\n"
                            + "Audio is played by squeezelite, a separate program "

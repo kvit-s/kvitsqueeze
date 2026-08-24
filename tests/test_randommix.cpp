@@ -176,7 +176,7 @@ void TestRandomMix::theGenreScopeReadsNamesAndFlags()
 void TestRandomMix::theActionRowsAreNotGenres()
 {
     // "Select All" and "Select None" arrive in the same loop and carry no
-    // `checkbox`. SqeezeAmp offers those as its own buttons; letting them
+    // `checkbox`. KvitSqueeze offers those as its own buttons; letting them
     // through would put two fake genres at the top of the list.
     const QList<RandomMix::Genre> genres = RandomMix::genresFromListResult(object(R"({
         "count": 4,

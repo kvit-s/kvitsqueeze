@@ -140,7 +140,7 @@ QStringList randomMixChooseGenre(const QString &genre, bool included);
 QStringList randomMixAllGenres(bool included);
 
 // ── Server scope (prd.md FR-9.3). Sent through LmsSession::sendServerScoped().
-// Count 0 asks for the server's own fields and no player list — SqeezeAmp has
+// Count 0 asks for the server's own fields and no player list — KvitSqueeze has
 // no use for one (prd.md FR-6.2).
 QStringList serverStatus();
 QStringList rescan(bool playlistsOnly);

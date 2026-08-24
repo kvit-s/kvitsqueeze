@@ -3,7 +3,7 @@
 ## Reporting
 
 Report a suspected vulnerability privately through GitHub's
-[Report a vulnerability](https://github.com/kvit-s/sqeezeamp/security/advisories/new)
+[Report a vulnerability](https://github.com/kvit-s/kvitsqueeze/security/advisories/new)
 form rather than as a public issue.
 
 This is a single-maintainer hobby project. Expect a best-effort response rather
@@ -14,7 +14,7 @@ it, I will; if I cannot, I would rather say so than leave you waiting.
 
 Worth stating plainly, because it is unusually small and that is by design.
 
-**There is no network listener.** SqeezeAmp opens outbound connections to the
+**There is no network listener.** KvitSqueeze opens outbound connections to the
 Lyrion Music Server you configure, and nothing listens on a TCP port — not on
 any interface, not on loopback. This is a product rule rather than an
 implementation detail: the application deliberately exposes no remote-control
@@ -22,7 +22,7 @@ surface, and it is verified against a running build with `netstat`, which shows
 only outbound connections to the server's HTTP and CLI ports plus an ephemeral
 UDP client socket for discovery replies.
 
-**The one endpoint is a named pipe.** `\\.\pipe\SqeezeAmp-instance-<username>`
+**The one endpoint is a named pipe.** `\\.\pipe\KvitSqueeze-instance-<username>`
 exists so a second launch raises the running window instead of starting a
 second copy, and so a remapped key can send a transport command without paying
 Qt's start-up cost. Its properties:
@@ -37,11 +37,11 @@ Qt's start-up cost. Its properties:
   write-only from the sender's point of view.
 
 **Credentials.** If your server requires HTTP basic auth, the password goes to
-the Windows Credential Manager under `SqeezeAmp/<host>:<port>`. It is never
+the Windows Credential Manager under `KvitSqueeze/<host>:<port>`. It is never
 written to `QSettings`, never logged, and never placed in the registry
 alongside the other settings.
 
-**The audio engine is a separate process.** SqeezeAmp supervises a stock,
+**The audio engine is a separate process.** KvitSqueeze supervises a stock,
 unmodified `squeezelite.exe` and talks to it only through documented
 command-line arguments and its log output. It is not patched, and nothing it
 prints is executed.

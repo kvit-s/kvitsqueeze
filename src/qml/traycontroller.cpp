@@ -20,7 +20,7 @@ TrayController::TrayController(PlaybackController *player, RandomMixController *
 {
     m_tray->setIcon(AppIcon::application());
 
-    auto *showAction = m_menu->addAction(tr("Show SqeezeAmp"));
+    auto *showAction = m_menu->addAction(tr("Show KvitSqueeze"));
     connect(showAction, &QAction::triggered, this, &TrayController::showRequested);
 
     m_menu->addSeparator();
@@ -88,7 +88,7 @@ TrayController::TrayController(PlaybackController *player, RandomMixController *
     // other symptom arrives minutes later as a queue that ran out.
     connect(m_mix, &RandomMixController::mixStoppedUnexpectedly, this,
             [this](const QString &previous) {
-                notify(tr("SqeezeAmp"),
+                notify(tr("KvitSqueeze"),
                        tr("%1 ended because something replaced the queue.")
                            .arg(previous.isEmpty() ? tr("The random mix") : previous));
             });
@@ -137,7 +137,7 @@ void TrayController::refresh()
                             ? tr("Roll a fresh Song Mix")
                             : tr("Start a Song Mix (replaces the queue)"));
 
-    QString tooltip = QStringLiteral("SqeezeAmp");
+    QString tooltip = QStringLiteral("KvitSqueeze");
     if (!m_player->isPowered()) {
         tooltip += QStringLiteral("\n") + tr("Powered off");
     } else if (m_player->hasTrack()) {

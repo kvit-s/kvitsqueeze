@@ -1,12 +1,12 @@
-# SqeezeAmp
+# KvitSqueeze
 
-[![CI](https://github.com/kvit-s/sqeezeamp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kvit-s/sqeezeamp/actions/workflows/ci.yml)
+[![CI](https://github.com/kvit-s/kvitsqueeze/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kvit-s/kvitsqueeze/actions/workflows/ci.yml)
 
 A native Windows music player for [Lyrion Music Server](https://lyrion.org)
 (LMS). It registers itself as a player on your server, browses your library, and
 plays to this PC's audio device.
 
-![SqeezeAmp playing an album, showing the Now Playing view](docs/now-playing.png)
+![KvitSqueeze playing an album, showing the Now Playing view](docs/now-playing.png)
 
 ## Why it exists
 
@@ -64,7 +64,7 @@ scrolls to keep it visible.
 
 The server serves only the plain lyric tag in the file, which has no timings.
 For timed lyrics, point **Settings → Music folder on this PC** at the same files
-the server plays — mapped drive, UNC share or local folder. SqeezeAmp reads the
+the server plays — mapped drive, UNC share or local folder. KvitSqueeze reads the
 `.lrc` sidecar next to each track. Lyrion does not read those files.
 
 Lyrics without timings display with no line highlighted.
@@ -102,21 +102,21 @@ Lyrics without timings display with no line highlighted.
 
 ### 1. Download
 
-From the [latest release](https://github.com/kvit-s/sqeezeamp/releases/latest):
+From the [latest release](https://github.com/kvit-s/kvitsqueeze/releases/latest):
 
 | | |
 |---|---|
-| `SqeezeAmp-<version>-setup.exe` | Installer. Per-user by default, no administrator rights. |
-| `SqeezeAmp-<version>-windows-x64.zip` | Portable. See [below](#or-the-portable-zip). |
+| `KvitSqueeze-<version>-setup.exe` | Installer. Per-user by default, no administrator rights. |
+| `KvitSqueeze-<version>-windows-x64.zip` | Portable. See [below](#or-the-portable-zip). |
 | `SHA256SUMS-windows.txt` | Checksums for both. |
 
 ```powershell
-Get-FileHash .\SqeezeAmp-0.1.0-setup.exe -Algorithm SHA256
+Get-FileHash .\KvitSqueeze-0.1.0-setup.exe -Algorithm SHA256
 ```
 
 ### 2. Warnings you will see
 
-SqeezeAmp is not code-signed, so Windows does not recognise the publisher.
+KvitSqueeze is not code-signed, so Windows does not recognise the publisher.
 
 - **Browser:** Edge and Chrome flag rarely-downloaded executables. Choose
   **Keep**, then **Show more → Keep anyway**.
@@ -158,7 +158,7 @@ Then extract, and from that folder:
 powershell -ExecutionPolicy Bypass -File fetch-engine.ps1
 ```
 
-Then run `sqeezeamp.exe`.
+Then run `kvitsqueeze.exe`.
 
 ---
 
@@ -174,7 +174,7 @@ another subnet — including any LMS running as a Home Assistant add-on — has 
 be typed in. Auth is optional; passwords go to the Windows Credential Manager.
 
 The app registers as a player under the name in **Settings → Player** (default
-`SqeezeAmp (<machine>)`) and keeps that identity across restarts, so its queue
+`KvitSqueeze (<machine>)`) and keeps that identity across restarts, so its queue
 and per-player settings persist on the server.
 
 ### Keyboard
@@ -195,11 +195,11 @@ and per-player settings persist on the server.
 ### Command line
 
 ```
-sqeezeamp.exe --minimized     start hidden in the system tray
-sqeezeamp.exe --play-pause    send a transport command to the running copy
-sqeezeamp.exe --next          and exit; does nothing if none is running
-sqeezeamp.exe --previous
-sqeezeamp.exe --stop
+kvitsqueeze.exe --minimized     start hidden in the system tray
+kvitsqueeze.exe --play-pause    send a transport command to the running copy
+kvitsqueeze.exe --next          and exit; does nothing if none is running
+kvitsqueeze.exe --previous
+kvitsqueeze.exe --stop
 ```
 
 A second launch raises the existing window instead of starting a second copy.
@@ -223,17 +223,17 @@ grabbed the hotkey first answers, this reaches this app specifically.
 
 | | |
 |---|---|
-| Settings | `HKCU\Software\SqeezeAmp\SqeezeAmp` |
-| Password | Windows Credential Manager, `SqeezeAmp/<host>:<port>` |
-| Logs | `%LOCALAPPDATA%\SqeezeAmp\SqeezeAmp\logs\` — 2 MB × 5 |
-| Artwork cache | `%LOCALAPPDATA%\SqeezeAmp\SqeezeAmp\cache\artwork\` — 256 MB default |
+| Settings | `HKCU\Software\KvitSqueeze\KvitSqueeze` |
+| Password | Windows Credential Manager, `KvitSqueeze/<host>:<port>` |
+| Logs | `%LOCALAPPDATA%\KvitSqueeze\KvitSqueeze\logs\` — 2 MB × 5 |
+| Artwork cache | `%LOCALAPPDATA%\KvitSqueeze\KvitSqueeze\cache\artwork\` — 256 MB default |
 
 Closing the window ends the app. **Settings → Closing the window keeps playing in
 the tray** changes that.
 
 ## Audio engine
 
-SqeezeAmp does not decode audio. It drives a stock, unmodified `squeezelite` as
+KvitSqueeze does not decode audio. It drives a stock, unmodified `squeezelite` as
 a supervised child process.
 
 That binary is GPLv3, so it is not shipped here. The installer downloads it from
@@ -243,7 +243,7 @@ that does the same. This is why setup needs an internet connection.
 ## Status
 
 0.1.0, a beta. In daily use on the author's machine.
-[Issues](https://github.com/kvit-s/sqeezeamp/issues).
+[Issues](https://github.com/kvit-s/kvitsqueeze/issues).
 
 ## Building from source
 
@@ -252,6 +252,6 @@ that does the same. This is why setup needs an internet connection.
 
 ## Licence
 
-SqeezeAmp is [MPL-2.0](LICENSE), including the UI. The audio engine it drives is
+KvitSqueeze is [MPL-2.0](LICENSE), including the UI. The audio engine it drives is
 GPLv3 and is downloaded rather than distributed here. Qt is used under LGPLv3.
 See [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).

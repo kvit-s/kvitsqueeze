@@ -1,4 +1,4 @@
-# Stage the MSVC C runtime beside the built sqeezeamp.exe.
+# Stage the MSVC C runtime beside the built kvitsqueeze.exe.
 #
 # windeployqt brings Qt, not the C runtime the app was compiled against. On the
 # machine that built it that goes unnoticed, because Visual Studio put the CRT

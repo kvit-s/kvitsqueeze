@@ -1,4 +1,4 @@
-# The squeezelite build SqeezeAmp is tested against.
+# The squeezelite build KvitSqueeze is tested against.
 #
 # Pinned rather than "whatever was current": the log format this app scrapes
 # for engine status is not a stable interface (prd.md §7.3.4), so an engine
@@ -47,5 +47,5 @@ build:   WIN PORTAUDIO WINEVENT RESAMPLE FFMPEG OPUS OGGMETA DSD SSL LINKALL
 #  * v1.9.9-1432 was re-pinned because upstream had removed it from
 #    SourceForge entirely, not because anything was wrong with it.
 #
-# Distribution: this binary is GPLv3, and SqeezeAmp does not distribute it.
+# Distribution: this binary is GPLv3, and KvitSqueeze does not distribute it.
 # See THIRD-PARTY-NOTICES.md for what that does and does not oblige.

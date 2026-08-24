@@ -73,7 +73,7 @@ PROCESS_OWNER = "engine"
 
 # ── Player identity: not above sqz-session (prd.md FR-6.1/FR-6.2).
 #
-# SqeezeAmp addresses exactly one player, itself. The id is injected in
+# KvitSqueeze addresses exactly one player, itself. The id is injected in
 # LmsSession::post() and nowhere else, so a call site cannot name a foreign
 # player even by mistake.
 #
@@ -156,7 +156,7 @@ def main():
                     if module not in PLAYER_ID_OWNERS and PLAYER_ID_TYPES.search(line):
                         violations.append(
                             f"{relative}:{number}: a player id outside "
-                            f"{sorted(PLAYER_ID_OWNERS)} — SqeezeAmp addresses one "
+                            f"{sorted(PLAYER_ID_OWNERS)} — KvitSqueeze addresses one "
                             f"player and LmsSession injects its id (prd.md FR-6.1)"
                         )
 

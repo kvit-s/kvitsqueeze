@@ -1,8 +1,8 @@
 # Where to fetch the audio engine from.
 #
-# SqeezeAmp does not distribute squeezelite. The installer downloads it, and
+# KvitSqueeze does not distribute squeezelite. The installer downloads it, and
 # so does packaging\windows\fetch-engine.ps1 for the portable zip. Nothing in
-# a SqeezeAmp artifact contains GPL-licensed code, so nothing in a SqeezeAmp
+# a KvitSqueeze artifact contains GPL-licensed code, so nothing in a KvitSqueeze
 # release carries GPLv3's distribution duties (prd.md 11.1, 11.2).
 #
 # ── Why this file exists separately from the installer
@@ -16,7 +16,7 @@
 #
 # So the installer does not hold the URL. It reads this file over the network:
 #
-#   https://raw.githubusercontent.com/kvit-s/sqeezeamp/main/packaging/engine-manifest.txt
+#   https://raw.githubusercontent.com/kvit-s/kvitsqueeze/main/packaging/engine-manifest.txt
 #
 # Editing the three lines at the bottom and pushing repairs every installer
 # ever shipped, without a new release.

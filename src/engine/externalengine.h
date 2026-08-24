@@ -6,7 +6,7 @@
 //
 // This is the only backend v1 builds. It ships the upstream binary unmodified
 // and talks to it only through documented command-line arguments and its log
-// output — which is what keeps SqeezeAmp's own licence unconstrained
+// output — which is what keeps KvitSqueeze's own licence unconstrained
 // (prd.md §11.2). Do not patch the binary, and do not add a private channel
 // to it.
 

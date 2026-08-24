@@ -2,7 +2,7 @@
 
 #include "appcontext.h"
 #include "artworkimageprovider.h"
-#include "sqeezeampapplication.h"
+#include "kvitsqueezeapplication.h"
 
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
@@ -27,7 +27,7 @@
 // Labelled `shell` rather than `unit`: it needs a QML engine and a window.
 
 // The window-and-tray half of the shell's QML surface, which the real app
-// supplies as SqeezeAmpApplication. Stubbed rather than instantiated because
+// supplies as KvitSqueezeApplication. Stubbed rather than instantiated because
 // the real one puts an icon in the tray and grabs the system's media keys.
 //
 // It cannot drift silently: Main.qml binds to these names, so a property added
@@ -76,13 +76,13 @@ void TestShell::initTestCase()
     // The shipped app's backend, not the default one. Every view below is
     // instantiated to see whether it warns, and an item the software renderer
     // cannot draw warns only on the software renderer.
-    SqeezeAmpApplication::chooseSceneGraphBackend();
+    KvitSqueezeApplication::chooseSceneGraphBackend();
 
     QQuickStyle::setStyle(QStringLiteral("Basic"));
-    QCoreApplication::setOrganizationName(QStringLiteral("SqeezeAmp"));
+    QCoreApplication::setOrganizationName(QStringLiteral("KvitSqueeze"));
     // A separate application name keeps the test out of the developer's own
     // settings — window geometry and the persisted player id included.
-    QCoreApplication::setApplicationName(QStringLiteral("SqeezeAmpShellTest"));
+    QCoreApplication::setApplicationName(QStringLiteral("KvitSqueezeShellTest"));
 }
 
 void TestShell::theSqzModuleActuallyContainsItsTypes()

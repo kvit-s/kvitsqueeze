@@ -121,8 +121,8 @@ QString Settings::playerName() const
     // "SqueezeLite": the player shows up in the server's list as something the
     // user recognises, and FR-1.4 lets them rename it afterwards.
     const QString host = QSysInfo::machineHostName();
-    const QString fallback = host.isEmpty() ? QStringLiteral("SqeezeAmp")
-                                            : QStringLiteral("SqeezeAmp (%1)").arg(host);
+    const QString fallback = host.isEmpty() ? QStringLiteral("KvitSqueeze")
+                                            : QStringLiteral("KvitSqueeze (%1)").arg(host);
     return m_settings.value(QLatin1String(kPlayerName), fallback).toString();
 }
 

@@ -1,5 +1,5 @@
 @echo off
-rem Stage the Qt runtime and the audio engine next to the built sqeezeamp.exe
+rem Stage the Qt runtime and the audio engine next to the built kvitsqueeze.exe
 rem so it runs from Explorer. Also the basis of the portable zip.
 rem
 rem --qmldir qml is what makes windeployqt deploy the QML modules the shell
@@ -12,7 +12,7 @@ cd /d %~dp0
 
 set STAGE=build-windows-msvc-release\Release
 
-"%QT_ROOT_DIR%\bin\windeployqt.exe" --release --qmldir qml %STAGE%\sqeezeamp.exe > windeploy.log 2>&1
+"%QT_ROOT_DIR%\bin\windeployqt.exe" --release --qmldir qml %STAGE%\kvitsqueeze.exe > windeploy.log 2>&1
 if errorlevel 1 (
     echo win-deploy: windeployqt failed, see windeploy.log
     exit /b 1
@@ -31,7 +31,7 @@ if errorlevel 1 (
 
 rem ── The audio engine (prd.md §7.3.2) — development only.
 rem
-rem Stock squeezelite.exe, unmodified, launched as a child process. SqeezeAmp
+rem Stock squeezelite.exe, unmodified, launched as a child process. KvitSqueeze
 rem does not distribute it: the installer downloads it during setup and
 rem win-package.bat keeps engine\ out of both shipped artifacts. This staging
 rem exists only so the tree runs from Explorer on the machine that built it.
@@ -59,7 +59,7 @@ copy /y packaging\engine-manifest.txt "%STAGE%\" >nul
 
 rem ── The licence payload (prd.md §11.2).
 rem
-rem SqeezeAmp's own MPL-2.0 obliges every artifact to carry LICENSE, which is
+rem KvitSqueeze's own MPL-2.0 obliges every artifact to carry LICENSE, which is
 rem why CMakeLists.txt refuses to configure without it. The GPLv3 text travels
 rem too, even though the engine binary no longer does: a user whose installer
 rem fetched squeezelite has a GPLv3 program on disk and should have its terms.

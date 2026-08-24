@@ -29,7 +29,7 @@ namespace LmsRequest {
 //
 // An empty playerId is the server scope, which LMS spells as "". It is a
 // legitimate value for server-wide commands such as `serverstatus`, so this
-// does not reject it — the rule that SqeezeAmp only ever addresses its own
+// does not reject it — the rule that KvitSqueeze only ever addresses its own
 // player is enforced one layer up, in LmsSession (prd.md FR-6.1).
 QJsonObject jsonRpcBody(const QString &playerId, const QStringList &command, int id = 1);
 

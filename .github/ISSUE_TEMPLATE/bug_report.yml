@@ -21,7 +21,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: SqeezeAmp version
+      label: KvitSqueeze version
       description: Settings → About, or the installer filename.
       placeholder: "0.1.0"
     validations:

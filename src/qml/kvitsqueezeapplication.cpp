@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-#include "sqeezeampapplication.h"
+#include "kvitsqueezeapplication.h"
 
 #include "appcontext.h"
 #include "appicon.h"
@@ -28,7 +28,7 @@ constexpr int kSmtcArtworkSize = 300;
 
 } // namespace
 
-void SqeezeAmpApplication::chooseSceneGraphBackend()
+void KvitSqueezeApplication::chooseSceneGraphBackend()
 {
     // Qt Quick's software renderer, not the default D3D11 one.
     //
@@ -56,7 +56,7 @@ void SqeezeAmpApplication::chooseSceneGraphBackend()
     QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
 }
 
-SqeezeAmpApplication::SqeezeAmpApplication(QObject *parent)
+KvitSqueezeApplication::KvitSqueezeApplication(QObject *parent)
     : QObject(parent)
     , m_context(new AppContext({}, this))
     , m_instance(new SingleInstance(this))
@@ -70,36 +70,36 @@ SqeezeAmpApplication::SqeezeAmpApplication(QObject *parent)
     AppContext::registerQmlTypes();
 
     connect(m_instance, &SingleInstance::activationRequested,
-            this, &SqeezeAmpApplication::showWindow);
+            this, &KvitSqueezeApplication::showWindow);
 }
 
-SqeezeAmpApplication::~SqeezeAmpApplication()
+KvitSqueezeApplication::~KvitSqueezeApplication()
 {
     saveWindowState();
 }
 
-bool SqeezeAmpApplication::claimSingleInstance(SingleInstance::Command commandIfRunning)
+bool KvitSqueezeApplication::claimSingleInstance(SingleInstance::Command commandIfRunning)
 {
     return m_instance->claim(commandIfRunning);
 }
 
-bool SqeezeAmpApplication::isTrayAvailable() const
+bool KvitSqueezeApplication::isTrayAvailable() const
 {
     return m_tray && m_tray->isAvailable();
 }
 
-bool SqeezeAmpApplication::isMicWatchAvailable() const
+bool KvitSqueezeApplication::isMicWatchAvailable() const
 {
     return m_micPause && m_micPause->isAvailable();
 }
 
-QQuickWindow *SqeezeAmpApplication::window() const
+QQuickWindow *KvitSqueezeApplication::window() const
 {
     const QList<QObject *> roots = m_engine.rootObjects();
     return roots.isEmpty() ? nullptr : qobject_cast<QQuickWindow *>(roots.first());
 }
 
-bool SqeezeAmpApplication::load(bool startMinimized)
+bool KvitSqueezeApplication::load(bool startMinimized)
 {
     m_engine.addImageProvider(QStringLiteral("artwork"),
                               new ArtworkImageProvider(m_context->artwork()));
@@ -128,17 +128,17 @@ bool SqeezeAmpApplication::load(bool startMinimized)
     return true;
 }
 
-void SqeezeAmpApplication::wireWindowsIntegration()
+void KvitSqueezeApplication::wireWindowsIntegration()
 {
     PlaybackController *player = m_context->player();
 
     // ── Tray (prd.md FR-7.1) and background operation (FR-1.7).
     m_tray = new TrayController(player, m_context->mix(), this);
-    connect(m_tray, &TrayController::showRequested, this, &SqeezeAmpApplication::showWindow);
-    connect(m_tray, &TrayController::hideRequested, this, &SqeezeAmpApplication::hideWindow);
-    connect(m_tray, &TrayController::quitRequested, this, &SqeezeAmpApplication::quit);
+    connect(m_tray, &TrayController::showRequested, this, &KvitSqueezeApplication::showWindow);
+    connect(m_tray, &TrayController::hideRequested, this, &KvitSqueezeApplication::hideWindow);
+    connect(m_tray, &TrayController::quitRequested, this, &KvitSqueezeApplication::quit);
     connect(m_tray, &TrayController::settingsRequested,
-            this, &SqeezeAmpApplication::settingsRequested);
+            this, &KvitSqueezeApplication::settingsRequested);
     m_tray->show();
 
     // ── Media keys (prd.md FR-7.2).
@@ -243,11 +243,11 @@ void SqeezeAmpApplication::wireWindowsIntegration()
     connect(m_context->engineController(), &EngineController::statusChanged, this, [this] {
         const QString error = m_context->engineController()->lastError();
         if (!error.isEmpty() && m_tray)
-            m_tray->notify(tr("SqeezeAmp"), error);
+            m_tray->notify(tr("KvitSqueeze"), error);
     });
 }
 
-void SqeezeAmpApplication::restoreWindowState()
+void KvitSqueezeApplication::restoreWindowState()
 {
     QQuickWindow *shellWindow = window();
     if (!shellWindow)
@@ -288,7 +288,7 @@ void SqeezeAmpApplication::restoreWindowState()
         shellWindow->showMaximized();
 }
 
-void SqeezeAmpApplication::saveWindowState()
+void KvitSqueezeApplication::saveWindowState()
 {
     QQuickWindow *shellWindow = window();
     if (!shellWindow || !m_context)
@@ -310,7 +310,7 @@ void SqeezeAmpApplication::saveWindowState()
     m_context->settings()->setWindowGeometry(blob);
 }
 
-void SqeezeAmpApplication::showWindow()
+void KvitSqueezeApplication::showWindow()
 {
     QQuickWindow *shellWindow = window();
     if (!shellWindow)
@@ -327,26 +327,26 @@ void SqeezeAmpApplication::showWindow()
     shellWindow->requestActivate();
 }
 
-void SqeezeAmpApplication::hideWindow()
+void KvitSqueezeApplication::hideWindow()
 {
     saveWindowState();
     if (QQuickWindow *shellWindow = window())
         shellWindow->hide();
 }
 
-void SqeezeAmpApplication::notifyStillRunning()
+void KvitSqueezeApplication::notifyStillRunning()
 {
     // Said once, the first time the window is closed to the tray. Every time
     // would be nagging; never would leave the user thinking the app quit.
     if (m_toldAboutTray || !m_tray)
         return;
     m_toldAboutTray = true;
-    m_tray->notify(tr("SqeezeAmp is still playing"),
+    m_tray->notify(tr("KvitSqueeze is still playing"),
                    tr("The player keeps running in the tray. "
                       "Use the tray icon to show it again or to quit."));
 }
 
-void SqeezeAmpApplication::quit()
+void KvitSqueezeApplication::quit()
 {
     saveWindowState();
     if (m_tray)

@@ -25,7 +25,7 @@ rem a prerelease build, exactly as it does for the CMake configure.
 if defined SQZ_VERSION_FULL (
     set VERSION=%SQZ_VERSION_FULL%
 ) else (
-    for /f "tokens=3" %%v in ('findstr /r /c:"^project(sqeezeamp VERSION " CMakeLists.txt') do set VERSION=%%v
+    for /f "tokens=3" %%v in ('findstr /r /c:"^project(kvitsqueeze VERSION " CMakeLists.txt') do set VERSION=%%v
 )
 if not defined VERSION (
     echo win-package: could not read the version from CMakeLists.txt
@@ -37,7 +37,7 @@ rem not run elevated, so both locations are tried before giving up.
 set ISCC=%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe
 if not exist "%ISCC%" set ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe
 
-if not exist "%STAGE%\sqeezeamp.exe" (
+if not exist "%STAGE%\kvitsqueeze.exe" (
     echo win-package: nothing staged. Run win-build.bat then win-deploy.bat first.
     exit /b 1
 )
@@ -68,7 +68,7 @@ rem one folder instead of emptying two hundred files into whatever directory it
 rem was opened in. The installer is compiled from this same copy, which is what
 rem makes "the zip and the setup contain the same bytes" a fact rather than an
 rem intention. robocopy reports success as any exit code below 8.
-set PKGNAME=SqeezeAmp-%VERSION%-windows-x64
+set PKGNAME=KvitSqueeze-%VERSION%-windows-x64
 set PKGDIR=build-windows-msvc-release\%PKGNAME%
 robocopy "%STAGE%" "%PKGDIR%" /MIR /NJH /NJS /NFL /NDL >nul
 if errorlevel 8 (
@@ -118,12 +118,12 @@ if not exist "%ISCC%" (
     exit /b 0
 )
 
-"%ISCC%" /DAppVersion=%VERSION% "/DStageDir=%CD%\%PKGDIR%" packaging\windows\sqeezeamp.iss
+"%ISCC%" /DAppVersion=%VERSION% "/DStageDir=%CD%\%PKGDIR%" packaging\windows\kvitsqueeze.iss
 if errorlevel 1 (
     echo win-package: Inno Setup failed
     exit /b 1
 )
-echo win-package: %DIST%\SqeezeAmp-%VERSION%-setup.exe
+echo win-package: %DIST%\KvitSqueeze-%VERSION%-setup.exe
 
 call :checksums
 exit /b 0

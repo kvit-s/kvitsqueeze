@@ -7,13 +7,13 @@ obligations below.
 
 ## squeezelite — GPLv3, and not distributed here
 
-SqeezeAmp plays audio by supervising upstream
+KvitSqueeze plays audio by supervising upstream
 [squeezelite](https://github.com/ralph-irving/squeezelite) as a child process
-at `engine/squeezelite.exe`. The binary is **unmodified**: SqeezeAmp talks to
+at `engine/squeezelite.exe`. The binary is **unmodified**: KvitSqueeze talks to
 it only through documented command-line arguments and its log output
 (prd.md §7.3.2).
 
-**No SqeezeAmp artifact contains it.** Neither the installer nor the portable
+**No KvitSqueeze artifact contains it.** Neither the installer nor the portable
 zip carries squeezelite, and it is not in this repository. Instead:
 
 - the **installer downloads it during setup**, from upstream, verifying it
@@ -32,13 +32,13 @@ repairs every installer ever shipped.
 GPLv3's obligations attach to **conveying** the program. An installer that
 fetches a binary from its own author conveys nothing: the recipient obtains
 squeezelite from upstream, on upstream's terms, exactly as if they had clicked
-the link themselves. So SqeezeAmp owes no licence text, no corresponding
+the link themselves. So KvitSqueeze owes no licence text, no corresponding
 source, and no written offer for squeezelite — the arrangement this project
 previously used, attaching an upstream source snapshot to each release under
 GPLv3 §6(d), is no longer needed and no longer done.
 
 What has **not** changed is the reasoning in prd.md §11.2 about the process
-boundary. SqeezeAmp's own MPL-2.0 depends on squeezelite being a separate
+boundary. KvitSqueeze's own MPL-2.0 depends on squeezelite being a separate
 program communicating at arm's length, so the rules that keep it separate still
 bind: talk to the child only through documented CLI arguments and its log
 output, never patch it, and keep it independently runnable and independently
@@ -68,8 +68,8 @@ they stop matching.
 The pinned build reports `WIN PORTAUDIO WINEVENT RESAMPLE FFMPEG OPUS OGGMETA
 DSD SSL LINKALL`, so PortAudio (MIT), FLAC, libmad, faad2, libvorbis, libopus,
 soxr and parts of FFmpeg are statically linked into it by its authors. Those
-are components of *that* program, not of SqeezeAmp — none of them is compiled,
-linked or vendored here, and none of them ships in a SqeezeAmp artifact.
+are components of *that* program, not of KvitSqueeze — none of them is compiled,
+linked or vendored here, and none of them ships in a KvitSqueeze artifact.
 
 This is also why prd.md §14 assumption 4 (the libmad / faad2 licence question)
 is moot under Backend B: nothing in this repository compiles a codec.

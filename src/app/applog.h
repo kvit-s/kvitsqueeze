@@ -2,7 +2,7 @@
 
 #pragma once
 
-// prd.md FR-9.1: a rotating log file under %LOCALAPPDATA%\SqeezeAmp\logs\,
+// prd.md FR-9.1: a rotating log file under %LOCALAPPDATA%\KvitSqueeze\logs\,
 // with per-subsystem levels.
 //
 // Built on Qt's own logging categories rather than a parallel mechanism, so

@@ -166,7 +166,7 @@ Item {
                 text: qsTr("Starting the %1 clears the %n track(s) in the queue "
                            + "and fills it with a fresh selection. The server "
                            + "does this for every controller, not just "
-                           + "SqeezeAmp.", "", app.queue.count)
+                           + "KvitSqueeze.", "", app.queue.count)
                       .arg(app.mix.nameForType(confirm.pendingType))
             }
         }

@@ -1,5 +1,5 @@
 @echo off
-rem Configure + build SqeezeAmp with MSVC 2022 / Qt 6.10.1.
+rem Configure + build KvitSqueeze with MSVC 2022 / Qt 6.10.1.
 rem Usage: win-build.bat [configure|build|test]  (no arg = configure+build)
 rem
 rem Unlike kvit-notes there is no WSL mirror here: this tree IS the checkout,
@@ -28,7 +28,7 @@ if errorlevel 1 exit /b 1
 if "%1"=="configure" exit /b 0
 
 :build
-rem Close the running app before rebuilding: a locked sqeezeamp.exe fails its
+rem Close the running app before rebuilding: a locked kvitsqueeze.exe fails its
 rem link with LNK1104 while the rest of the build succeeds, leaving a stale
 rem exe that looks fresh.
 "%CMAKE%" --build --preset windows-msvc-release -j 8

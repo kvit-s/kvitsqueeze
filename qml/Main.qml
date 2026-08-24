@@ -43,8 +43,8 @@ ApplicationWindow {
     minimumHeight: 420
     visible: true
     title: app.player.hasTrack
-           ? app.player.title + " — " + app.player.artist + "  ·  SqeezeAmp"
-           : qsTr("SqeezeAmp")
+           ? app.player.title + " — " + app.player.artist + "  ·  KvitSqueeze"
+           : qsTr("KvitSqueeze")
 
     Theme { id: theme }
     color: theme.surface

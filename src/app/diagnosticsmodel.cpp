@@ -122,7 +122,7 @@ void DiagnosticsModel::clear()
 QString DiagnosticsModel::asText() const
 {
     QString text;
-    text += QStringLiteral("SqeezeAmp %1\n").arg(QCoreApplication::applicationVersion());
+    text += QStringLiteral("KvitSqueeze %1\n").arg(QCoreApplication::applicationVersion());
     text += QStringLiteral("%1 %2 (%3)\n").arg(QSysInfo::prettyProductName(),
                                                QSysInfo::kernelVersion(),
                                                QSysInfo::currentCpuArchitecture());

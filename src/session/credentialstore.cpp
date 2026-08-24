@@ -11,7 +11,7 @@ namespace {
 
 QString targetName(const QString &host, quint16 port)
 {
-    return QStringLiteral("SqeezeAmp/%1:%2").arg(host).arg(port);
+    return QStringLiteral("KvitSqueeze/%1:%2").arg(host).arg(port);
 }
 
 } // namespace
