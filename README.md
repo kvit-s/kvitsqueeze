@@ -1,5 +1,6 @@
 # KvitSqueeze
 
+[![Latest release](https://img.shields.io/github/v/release/kvit-s/kvitsqueeze?display_name=tag&label=download)](https://github.com/kvit-s/kvitsqueeze/releases/latest)
 [![CI](https://github.com/kvit-s/kvitsqueeze/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kvit-s/kvitsqueeze/actions/workflows/ci.yml)
 
 A native Windows music player for [Lyrion Music Server](https://lyrion.org)
