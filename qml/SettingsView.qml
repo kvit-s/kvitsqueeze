@@ -234,23 +234,18 @@ Item {
                 }
             }
 
-            // prd.md FR-2.8, and progress D11 — which is the part that has to
-            // be said out loud. A list of five quality names reads as "how
-            // good would you like your audio to be", so Off looks like the
-            // pure choice. It is not: in shared mode the device runs at one
-            // fixed rate, and a track at a different rate simply does not open.
-            // That failure is silent and looks exactly like playing. Balanced
-            // is the default for that reason and this says why.
+            // prd.md FR-2.8, and progress D11. Five quality names on their own
+            // read as "how good would you like your audio to be", which makes
+            // Off look like the pure choice; it is the one that produces
+            // silence. Three sentences: what the device does, what this does
+            // about it, which to pick.
             Hint {
-                text: qsTr("The output device runs at one fixed rate in shared "
-                           + "mode. A track recorded at a different rate has to "
-                           + "be converted to it, or the device will not open at "
-                           + "all — the music appears to play, in silence. "
-                           + "Leave this on: conversion only happens when the "
-                           + "rates actually differ, and Balanced is inaudible "
-                           + "in practice. The higher settings spend more CPU on "
-                           + "the same job; Off is for a device you know accepts "
-                           + "every rate in your library.")
+                text: qsTr("Windows runs your sound device at one fixed rate. "
+                           + "Resampling converts tracks recorded at any other "
+                           + "rate to match it — without it, those tracks give "
+                           + "silence rather than an error. Balanced suits "
+                           + "almost everyone; higher settings cost CPU without "
+                           + "sounding different.")
             }
 
             CheckBox {
