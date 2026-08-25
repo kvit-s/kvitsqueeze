@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(kvitsqueeze VERSION 0.1.1 LANGUAGES CXX)
+project(kvitsqueeze VERSION 0.1.2 LANGUAGES CXX)
 
 # The full SemVer string the binary reports, prerelease suffix included.
 # PROJECT_VERSION carries the three numeric components only, because CMake
