@@ -29,7 +29,10 @@
 ;
 ; The download is never a gate. If it fails — no network, a corporate proxy, a
 ; pruned URL, an unchecked task — setup completes anyway and KvitSqueeze
-; installs. The app reports a missing engine and names the repair script.
+; installs. The app then offers the same download from its own first-run panel,
+; reading the same manifest and checking the same two hashes (prd.md FR-2.11), so
+; an install that ends without an engine is an inconvenience rather than a dead
+; end. That is also why this task staying unchecked is a supported choice.
 
 #define AppName "KvitSqueeze"
 #define AppPublisher "KvitSqueeze"
@@ -305,8 +308,10 @@ begin
   if not EngineReady then
     SuppressibleMsgBox(
       'The audio engine could not be downloaded, so KvitSqueeze will install without it.' + #13#10#13#10 +
-      'Everything else works; playback will report that no engine is present. ' +
-      'To finish later, run fetch-engine.ps1 from the installation folder once you have a connection.',
+      'Everything else works. KvitSqueeze will offer to fetch the engine itself the ' +
+      'first time you run it, from a button on its own setup panel, and nothing needs ' +
+      'restarting afterwards. fetch-engine.ps1 in the installation folder does the same ' +
+      'thing from a shell.',
       mbInformation, MB_OK, IDOK);
 end;
 

@@ -19,6 +19,8 @@
 #include <QString>
 #include <QStringList>
 
+class EngineInstaller;
+
 // prd.md FR-2.8. A quality *preset* rather than a filter recipe, because the
 // recipe grammar is one backend's command line and this header may not name
 // one. Off is the default: the Windows mixer already resamples in shared mode
@@ -110,6 +112,15 @@ public:
     // once, instead of failing at the first attempt to play.
     virtual bool isAvailable() const = 0;
 
+    // Can this backend go and get whatever it needs, and how is that going?
+    // Null when there is nothing to install — an in-process backend answers
+    // nullptr and the UI shows no setup panel at all, which is why this is a
+    // capability rather than a class the app is expected to know about.
+    //
+    // A backend that returns one must also start answering isAvailable() true
+    // once it has run, without the app being restarted (prd.md FR-2.11).
+    virtual EngineInstaller *installer() const { return nullptr; }
+
     virtual bool start(const EngineConfig &config) = 0;
     virtual void stop() = 0;
 
@@ -132,6 +143,13 @@ Q_SIGNALS:
     void statusChanged(const EngineStatus &status);
     void devicesChanged();
     void errorOccurred(const QString &message);
+
+    // isAvailable() has changed its answer. Emitted when an engine appears or
+    // disappears while the app is running — whether this app's own installer
+    // put it there, the repair script did, or the user dropped it in by hand.
+    // It exists so that "restart the app afterwards" is not an instruction
+    // anyone has to be given (prd.md FR-2.11).
+    void availabilityChanged();
 
     // Raw engine output, for the diagnostics panel (prd.md FR-9.2). Not a
     // parsing seam: anything the app needs to act on belongs in EngineStatus.

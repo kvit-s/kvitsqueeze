@@ -16,12 +16,17 @@ it only through documented command-line arguments and its log output
 **No KvitSqueeze artifact contains it.** Neither the installer nor the portable
 zip carries squeezelite, and it is not in this repository. Instead:
 
+- the **app downloads it itself**, from a button on its own setup panel, and
+  this is the route almost everyone takes (prd.md FR-2.11);
 - the **installer downloads it during setup**, from upstream, verifying it
   against a pinned SHA-256 before use;
 - the **portable zip carries `fetch-engine.ps1`**, which does the same thing
-  when the user runs it.
+  from a shell.
 
-Both read the location out of `packaging/engine-manifest.txt`, which is fetched
+All three verify the same two published SHA-256s — the archive's and the
+executable's inside it — before anything is written.
+
+All three read the location out of `packaging/engine-manifest.txt`, which is fetched
 over the network from this project's repository rather than compiled in —
 upstream prunes old builds from SourceForge, so a baked-in URL would eventually
 404 with no way to repair the copies already installed. Editing that one file
@@ -29,8 +34,8 @@ repairs every installer ever shipped.
 
 ### What that does and does not change
 
-GPLv3's obligations attach to **conveying** the program. An installer that
-fetches a binary from its own author conveys nothing: the recipient obtains
+GPLv3's obligations attach to **conveying** the program. An installer — or an
+application — that fetches a binary from its own author conveys nothing: the recipient obtains
 squeezelite from upstream, on upstream's terms, exactly as if they had clicked
 the link themselves. So KvitSqueeze owes no licence text, no corresponding
 source, and no written offer for squeezelite — the arrangement this project

@@ -2,13 +2,16 @@
 
 #include "externalengine.h"
 
+#include "engineinstaller.h"
 #include "playeridentity.h"
 #include "systemaudio.h"
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <QStandardPaths>
 #include <QTimer>
 
 #ifdef Q_OS_WIN
@@ -77,13 +80,28 @@ ExternalEngine::ExternalEngine(QObject *parent)
     , m_process(new QProcess(this))
     , m_enumerator(new QProcess(this))
     , m_restart(new QTimer(this))
-    , m_executable(QDir(QCoreApplication::applicationDirPath())
-                       .filePath(QStringLiteral("engine/squeezelite.exe")))
+    , m_availability(new QTimer(this))
+    , m_installer(new EngineInstaller(this))
 {
     // squeezelite writes its diagnostics to stderr and nothing useful to
     // stdout, so the two are kept separate rather than merged: merging them
     // would interleave partial lines from two streams into the log scraper.
     m_process->setProcessChannelMode(QProcess::SeparateChannels);
+
+    // A finished install is an engine appearing, and nobody should have to
+    // restart the app to benefit from it (prd.md FR-2.11).
+    m_installer->setDestination(installDestination());
+    connect(m_installer, &EngineInstaller::finished, this, [this] { checkAvailability(); });
+
+    // See checkAvailability(): there is no event for "a file appeared", and
+    // three different things can put one there. Two seconds is well under the
+    // time it takes to notice a button did nothing, and the timer stops as
+    // soon as the answer is yes.
+    m_lastKnownAvailable = isAvailable();
+    m_availability->setInterval(2000);
+    connect(m_availability, &QTimer::timeout, this, &ExternalEngine::checkAvailability);
+    if (!m_lastKnownAvailable)
+        m_availability->start();
 
     m_restart->setSingleShot(true);
     connect(m_restart, &QTimer::timeout, this, [this] {
@@ -97,10 +115,11 @@ ExternalEngine::ExternalEngine(QObject *parent)
     connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         if (error != QProcess::FailedToStart)
             return;
+        const QString path = executablePath();
         setState(EngineStatus::State::Failed,
-                 QFileInfo::exists(m_executable)
-                     ? tr("The audio engine at %1 would not start").arg(m_executable)
-                     : tr("No audio engine found at %1").arg(m_executable));
+                 QFileInfo::exists(path)
+                     ? tr("The audio engine at %1 would not start").arg(path)
+                     : tr("No audio engine found at %1").arg(path));
     });
 
     connect(m_process, &QProcess::finished, this,
@@ -158,14 +177,101 @@ ExternalEngine::~ExternalEngine()
 #endif
 }
 
+QStringList ExternalEngine::executableCandidates()
+{
+    QStringList candidates;
+
+    const QString pinned = qEnvironmentVariable("SQZ_ENGINE_EXE");
+    if (!pinned.isEmpty())
+        candidates << QDir::cleanPath(pinned);
+
+    candidates << QDir(QCoreApplication::applicationDirPath())
+                      .filePath(QStringLiteral("engine/squeezelite.exe"));
+    candidates << QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                      .filePath(QStringLiteral("engine/squeezelite.exe"));
+
+    return candidates;
+}
+
+QString ExternalEngine::resolveExecutable(const QStringList &candidates)
+{
+    for (const QString &candidate : candidates) {
+        if (QFileInfo::exists(candidate))
+            return candidate;
+    }
+    // Nothing is there. Answer with the first place it was looked for, so a
+    // failure message names a path instead of trailing off.
+    return candidates.value(0);
+}
+
+QString ExternalEngine::installDestination()
+{
+    // SQZ_ENGINE_EXE is deliberately not consulted: it names a file someone
+    // already has, which is not an answer to "where should a new one go".
+    //
+    // Beside the application when that folder can be written, because then one
+    // copy serves every way of launching it and win-deploy.bat's layout still
+    // holds. Inno Setup's PrivilegesRequired=lowest puts a normal install under
+    // %LOCALAPPDATA%\Programs, which is writable; an install someone elevated
+    // into Program Files is not, and telling that user to re-run the whole app
+    // as an administrator in order to get sound is not an answer.
+    const QString appDir = QCoreApplication::applicationDirPath();
+
+    // The application folder is probed rather than engine\ under it: finding
+    // out whether a folder can be created by creating it would leave an empty
+    // engine\ beside every install that never downloads anything. The probe
+    // file is removed either way, and its failure is the answer.
+    QFile probe(appDir + QStringLiteral("/.kvitsqueeze-write-probe"));
+    if (probe.open(QIODevice::WriteOnly)) {
+        probe.close();
+        probe.remove();
+        return appDir + QStringLiteral("/engine/squeezelite.exe");
+    }
+
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+        .filePath(QStringLiteral("engine/squeezelite.exe"));
+}
+
 void ExternalEngine::setExecutablePath(const QString &path)
 {
-    m_executable = path;
+    m_executableOverride = path;
+    checkAvailability();
+}
+
+QString ExternalEngine::executablePath() const
+{
+    return m_executableOverride.isEmpty() ? resolveExecutable(executableCandidates())
+                                          : m_executableOverride;
 }
 
 bool ExternalEngine::isAvailable() const
 {
-    return QFileInfo::exists(m_executable);
+    return QFileInfo::exists(executablePath());
+}
+
+void ExternalEngine::checkAvailability()
+{
+    const bool available = isAvailable();
+    if (available == m_lastKnownAvailable) {
+        // Keep asking only while the answer is no. Once an engine is there it
+        // is either running — in which case its exit is the event that matters
+        // — or it is not wanted yet, and either way a timer adds nothing.
+        if (available)
+            m_availability->stop();
+        else if (!m_availability->isActive())
+            m_availability->start();
+        return;
+    }
+
+    m_lastKnownAvailable = available;
+    if (available)
+        m_availability->stop();
+    else
+        m_availability->start();
+
+    // Whoever wanted the engine running gets to decide what to do about it.
+    // EngineController relaunches; nothing here knows whether it should.
+    Q_EMIT availabilityChanged();
 }
 
 QStringList ExternalEngine::buildArguments(const EngineConfig &config)
@@ -417,7 +523,7 @@ bool ExternalEngine::launch()
 
     if (!isAvailable()) {
         setState(EngineStatus::State::Failed,
-                 tr("No audio engine found at %1").arg(m_executable));
+                 tr("No audio engine found at %1").arg(executablePath()));
         return false;
     }
 
@@ -458,7 +564,7 @@ bool ExternalEngine::launch()
     m_launchedWithSystemDefault =
         m_config.outputDevice.isEmpty() && !launchConfig.outputDevice.isEmpty();
 
-    m_process->start(m_executable, buildArguments(launchConfig));
+    m_process->start(executablePath(), buildArguments(launchConfig));
     if (!m_process->waitForStarted(5000))
         return false;
 
@@ -552,7 +658,7 @@ void ExternalEngine::refreshDevices()
             args->flags |= CREATE_NO_WINDOW;
         });
 #endif
-    m_enumerator->start(m_executable, { QStringLiteral("-l") });
+    m_enumerator->start(executablePath(), { QStringLiteral("-l") });
 }
 
 void ExternalEngine::handleStandardError()

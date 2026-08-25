@@ -182,7 +182,8 @@ void TestShell::everyViewInstantiates()
         QStringLiteral("MixControl"),      QStringLiteral("NowPlayingView"),
         QStringLiteral("QueueView"),
         QStringLiteral("SearchView"),      QStringLiteral("SettingsView"),
-        QStringLiteral("DiagnosticsView"),
+        QStringLiteral("DiagnosticsView"), QStringLiteral("EngineSetup"),
+        QStringLiteral("EngineSetupDialog"),
     };
 
     for (const QString &view : views) {

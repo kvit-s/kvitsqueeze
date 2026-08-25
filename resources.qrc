@@ -16,6 +16,8 @@
         <file>qml/MiniPlayer.qml</file>
         <file>qml/MixControl.qml</file>
         <file>qml/MixGenreDialog.qml</file>
+        <file>qml/EngineSetup.qml</file>
+        <file>qml/EngineSetupDialog.qml</file>
 
         <!-- Screens -->
         <file>qml/NowPlayingView.qml</file>

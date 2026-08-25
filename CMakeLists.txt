@@ -44,8 +44,14 @@ set(CMAKE_AUTORCC ON)
 # Widgets is not optional despite this being a QML app: QSystemTrayIcon lives
 # there, and prd.md FR-7.1 makes the tray a P0 requirement. Network is listed
 # because sqz-session links it; see the ownership rule below.
+#
+# CorePrivate is its own component, not something Core brings along. It is here
+# for QZipReader alone — see the note on sqz-engine — and a Qt that does not
+# ship private headers fails at configure, which is a much better place to find
+# that out than in a linker error.
 find_package(Qt6 REQUIRED COMPONENTS
-    Core Gui Quick QuickControls2 Widgets Network Concurrent Test QuickTest)
+    Core CorePrivate Gui Quick QuickControls2 Widgets Network Concurrent
+    Test QuickTest)
 
 # Generated qmldir/.qmltypes land in `:/qt/qml/Sqz`, Qt's standard location
 # and on the engine's default import path. Unset, every configure warns.
@@ -62,8 +68,8 @@ qt_policy(SET QTP0001 NEW)
 #                   makes M1 testable before any of the app exists.
 #         ↑
 #   sqz-session     the live connection: discovery, HTTP transport, the CLI
-#                   event socket, reconnect and backoff. The ONLY module that
-#                   links Qt6::Network.
+#                   event socket, reconnect and backoff. Every request to the
+#                   server goes through here, and so does the player id.
 #         ↑
 #   sqz-app         orchestration and the QML-facing models: queue, browse,
 #                   search, artwork cache, and the playback coordinator that
@@ -90,6 +96,11 @@ qt_policy(SET QTP0001 NEW)
 # cannot express — Qt Network only in sqz-session, QProcess only in
 # sqz-engine — and one product invariant, that no call site outside
 # sqz-session may supply a player id (prd.md FR-6.1).
+#
+# The networking rule has exactly one exception, and it is spelled out in that
+# script rather than left to a build file: src/engine/engineinstaller.cpp
+# fetches the audio engine KvitSqueeze does not ship. It is not an LMS request
+# and cannot reach the session.
 
 # The shipped app is one statically-linked executable. Shared is offered for
 # development because every test binary links sqz-core and therefore the whole
@@ -119,10 +130,12 @@ target_include_directories(sqz-protocol PUBLIC src/protocol)
 
 # ── sqz-session — the live connection.
 #
-# Qt6::Network is linked here and nowhere else. That is the ownership rule in
-# build form: a module above this one cannot open a connection because it has
-# nothing to open one with. PUBLIC because the session's own headers hold a
-# QNetworkAccessManager.
+# Qt6::Network is linked here and, with one documented exception, nowhere else.
+# That is the ownership rule in build form: a module above this one cannot open
+# a connection because it has nothing to open one with. PUBLIC because the
+# session's own headers hold a QNetworkAccessManager. The exception is
+# sqz-engine, which fetches the audio engine this project does not ship; see
+# the note on its own target below.
 add_library(sqz-session ${SQZ_LIB_TYPE}
     src/session/credentialstore.cpp
     src/session/lmscliclient.cpp
@@ -153,13 +166,45 @@ endif()
 # from touching a player id at all. So both read it from the same place. The
 # alternative was plumbing the id through a module prd.md says must not carry
 # one, which would trade a two-line dependency for a hole in FR-6.1.
+#
+# ── The engine's download location, compiled in as a fallback
+#
+# EngineInstaller prefers the manifest published on GitHub, for the reason
+# packaging/engine-manifest.txt spells out at length: upstream prunes old
+# builds from SourceForge, and editing that file repairs copies of the app that
+# have already shipped. This is what it falls back to when GitHub is
+# unreachable — the same fallback the Inno Setup installer carries, kept in
+# step with it by being generated from the same file rather than retyped.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/packaging/engine-manifest.txt"
+     SQZ_ENGINE_MANIFEST_TEXT)
+configure_file(src/engine/enginemanifest.h.in
+               "${CMAKE_BINARY_DIR}/generated/enginemanifest.h" @ONLY)
+
 add_library(sqz-engine ${SQZ_LIB_TYPE}
+    src/engine/engineinstaller.cpp
     src/engine/externalengine.cpp
     src/engine/systemaudio.cpp
     src/engine/iaudioengine.h
 )
 target_link_libraries(sqz-engine PUBLIC sqz-protocol Qt6::Core)
 target_include_directories(sqz-engine PUBLIC src/engine)
+target_include_directories(sqz-engine PRIVATE "${CMAKE_BINARY_DIR}/generated")
+
+# ── Two links that are exceptions, and are meant to read as such
+#
+# Qt6::Network is otherwise sqz-session's alone — see the ownership rule above.
+# engineinstaller.cpp is the one documented exception, named in
+# tools/check-layering.py: it makes a single outbound HTTPS request to fetch
+# the audio engine the app does not ship. That is not an LMS request, carries
+# no player id, and cannot reach the session. prd.md N7 is untouched, because
+# N7 is about the app exposing no *listening* endpoint.
+#
+# Qt6::CorePrivate is for QZipReader. Upstream ships the engine as a .zip and
+# Qt has no public archive reader; the alternative was a second child process
+# to unpack it, which prd.md N7 rules out more firmly than a private header
+# does. Pinned by QT_ROOT_DIR, and a Qt upgrade that moves the header fails to
+# compile rather than misbehaving.
+target_link_libraries(sqz-engine PRIVATE Qt6::Network Qt6::CorePrivate)
 if(WIN32)
     # systemaudio.cpp asks Windows which endpoint is the default one, so that
     # "System default" in the settings screen means the device Windows would

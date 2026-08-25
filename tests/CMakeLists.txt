@@ -81,6 +81,14 @@ sqz_add_test(LrcSheetTests test_lrcsheet.cpp unit)
 # applyLogLine() is the whole of FR-2.5 under Backend B. Launches nothing.
 sqz_add_test(ExternalEngineTests test_externalengine.cpp unit)
 
+# ── Getting an engine in the first place (prd.md FR-2.11).
+#
+# The manifest format is a contract shared with the Inno Setup installer and
+# fetch-engine.ps1, and the search order decides whether the engine the
+# installer staged is the one that runs. Both are pure; nothing here opens a
+# connection or writes to the real install folder.
+sqz_add_test(EngineInstallerTests test_engineinstaller.cpp unit)
+
 # ── The shell.
 #
 # Instantiates the real QML tree through the real composition root, with the

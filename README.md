@@ -138,8 +138,9 @@ Verify the checksum above if you want confirmation, or
    pinned checksum. Setup needs an internet connection at this point.
 5. **Finish.**
 
-If the download fails, setup still completes and says so. Run `fetch-engine.ps1`
-from the installation folder later:
+If the download fails, setup still completes and says so — and the app offers to
+do it itself the first time you run it, with a **Download the audio engine**
+button. `fetch-engine.ps1` in the installation folder is still there for a shell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File fetch-engine.ps1
@@ -152,13 +153,19 @@ reinstalling gets the same player and its server-side queue back.
 
 Windows marks downloaded archives and everything extracted from them inherits
 the mark. Clear it first: right-click the zip → **Properties** → **Unblock**.
-Then extract, and from that folder:
+Then extract and run `kvitsqueeze.exe`.
+
+The zip carries no audio engine — squeezelite is GPLv3 and this project does not
+distribute it, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). The app says
+so on its first run and offers a **Download the audio engine** button; that is
+all there is to it, and nothing needs restarting afterwards. If a firewall
+blocks the download, the same panel takes a `squeezelite.exe` you already have.
+
+From a shell instead, before or after first run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File fetch-engine.ps1
 ```
-
-Then run `kvitsqueeze.exe`.
 
 ---
 
@@ -236,9 +243,15 @@ the tray** changes that.
 KvitSqueeze does not decode audio. It drives a stock, unmodified `squeezelite` as
 a supervised child process.
 
-That binary is GPLv3, so it is not shipped here. The installer downloads it from
-upstream and verifies a pinned checksum; the portable zip carries the script
-that does the same. This is why setup needs an internet connection.
+That binary is GPLv3, so it is not shipped here. It is downloaded from upstream
+and checked against a pinned checksum — by the installer during setup, by the app
+itself from a button the first time it finds none, or by `fetch-engine.ps1` from
+a shell. This is why setup needs an internet connection.
+
+The app looks for it at `engine\squeezelite.exe` beside the executable, falling
+back to `%LOCALAPPDATA%\KvitSqueeze\KvitSqueeze\engine\` when the installation
+folder is not writable. One appearing in either place is picked up while the app
+is running, so there is nothing to restart.
 
 ## Status
 

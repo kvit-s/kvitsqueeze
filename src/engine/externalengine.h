@@ -25,15 +25,43 @@ public:
     explicit ExternalEngine(QObject *parent = nullptr);
     ~ExternalEngine() override;
 
-    // Path to squeezelite.exe. Set before start(); defaults to
-    // engine/squeezelite.exe beside the application, which is where the
-    // installer stages it.
+    // Pin the engine to one path, overriding the search below. For tests and
+    // for SQZ_ENGINE_EXE; normal runs leave this alone so that an engine
+    // arriving later is found without a restart.
     void setExecutablePath(const QString &path);
-    QString executablePath() const { return m_executable; }
+
+    // The engine this would launch right now: the first candidate that exists,
+    // or the preferred one when none does — so an error message can name a
+    // path rather than trail off.
+    QString executablePath() const;
 
     // False when the binary is not where it is expected, so the UI can say
     // "the audio engine is missing" instead of failing at the first play.
     bool isAvailable() const override;
+
+    // Backend B needs a binary, so it has one of these. See prd.md FR-2.11.
+    EngineInstaller *installer() const override { return m_installer; }
+
+    // Where the engine is looked for, in the order it is tried:
+    //
+    //   1. $SQZ_ENGINE_EXE, for a development tree pointing at a copy
+    //      elsewhere.
+    //   2. engine\squeezelite.exe beside the application — where the installer
+    //      puts it, and where win-deploy.bat stages it.
+    //   3. engine\squeezelite.exe under the per-user data folder, which is
+    //      where this app's own downloader falls back to when the application
+    //      folder is not writable. An install elevated into Program Files is
+    //      exactly that case, and it is not a case worth refusing to play in.
+    //
+    // Static and pure so the order is a test rather than a comment.
+    static QStringList executableCandidates();
+    static QString resolveExecutable(const QStringList &candidates);
+
+    // Where a freshly downloaded engine should be written: candidate 2 when the
+    // application folder can be written, candidate 3 when it cannot. Never
+    // SQZ_ENGINE_EXE — an override that names a file someone already has is not
+    // an answer to where a new one should go.
+    static QString installDestination();
 
     bool start(const EngineConfig &config) override;
     void stop() override;
@@ -90,10 +118,23 @@ private:
     bool launch();
     void adoptIntoJob();
 
+    // Notice an engine arriving or leaving. There is no event to subscribe to
+    // here — the file can be put there by this app's downloader, by
+    // fetch-engine.ps1, or by a user with an Explorer window — so this is
+    // polled, like randomplayisactive and for the same reason. It is a
+    // QFileInfo::exists on at most three paths, and it stops asking the moment
+    // the answer is yes.
+    void checkAvailability();
+
     QProcess *m_process = nullptr;
     QProcess *m_enumerator = nullptr;
     QTimer *m_restart = nullptr;
-    QString m_executable;
+    QTimer *m_availability = nullptr;
+    EngineInstaller *m_installer = nullptr;
+
+    // Empty unless pinned by setExecutablePath(); the search runs otherwise.
+    QString m_executableOverride;
+    bool m_lastKnownAvailable = false;
     EngineConfig m_config;
     EngineStatus m_status;
     QList<AudioDevice> m_devices;

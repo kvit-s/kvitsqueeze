@@ -37,6 +37,16 @@ Item {
     readonly property bool gridCapable: browseModel && browseModel.kind === Library.Albums
     readonly property bool gridMode: gridCapable && app.settings.albumGridView
 
+    // Years, and only years. A year is four characters, and a full-width row
+    // per year makes a library spanning 1965 to 2024 a sixty-screen column of
+    // whitespace with a number at the left edge. Columns are what a list of
+    // short, fixed-width, self-ordering labels wants.
+    //
+    // Not applied to genres, which look similar and are not: a genre is a
+    // phrase of unpredictable length, and the moment one elides, a grid of
+    // them is worse than a list.
+    readonly property bool columnMode: browseModel && browseModel.kind === Library.Years
+
     // Rows that have a cover worth showing as a thumbnail.
     readonly property bool rowArtwork: browseModel
         && (browseModel.kind === Library.Albums || browseModel.kind === Library.Tracks
@@ -254,10 +264,87 @@ Item {
                 Keys.onReturnPressed: root.activate(grid.currentIndex)
             }
 
+            // ── Years, in columns.
+            //
+            // Its own GridView rather than a mode of the artwork one above:
+            // that grid's cell is a square cover with two lines under it, and
+            // everything about it — cellHeight, the Artwork, the request size
+            // — would need a branch. This one is rows in columns.
+            //
+            // The column count is derived from the width rather than fixed, so
+            // a narrow window gets two and a wide one gets eight, and the cell
+            // takes the exact remainder: an integer division that discards the
+            // remainder leaves a ragged strip down the right-hand edge that
+            // looks like a layout bug.
+            GridView {
+                id: columns
+                anchors.fill: parent
+                anchors.margins: theme.margin
+                visible: root.columnMode
+                model: visible ? root.browseModel : null
+
+                // Wide enough for a four-digit year, its hover ground and the
+                // gap to the next one, and no wider — a year needs no room to
+                // grow, so the only thing extra width buys is fewer columns.
+                readonly property int minColumnWidth: theme.compact ? 88 : 108
+                readonly property int columnCount:
+                    Math.max(1, Math.floor(width / minColumnWidth))
+                cellWidth: width / columnCount
+                cellHeight: theme.rowHeight
+
+                clip: true
+                cacheBuffer: theme.rowHeight * 40
+                focus: visible
+                ScrollBar.vertical: ScrollBar {}
+
+                delegate: ItemDelegate {
+                    id: yearCell
+                    required property int index
+                    required property string title
+                    required property bool loaded
+
+                    width: columns.cellWidth
+                    height: columns.cellHeight
+                    // See Theme.qml's metrics: an ItemDelegate hides 12 px of
+                    // padding above and below its content.
+                    topPadding: 0
+                    bottomPadding: 0
+
+                    Component.onCompleted: root.browseModel.ensureLoaded(index)
+
+                    background: Rectangle {
+                        color: yearCell.hovered ? theme.surfaceHover : "transparent"
+                        radius: theme.radius
+                    }
+
+                    contentItem: Label {
+                        text: yearCell.loaded ? yearCell.title : "…"
+                        color: theme.textPrimary
+                        font.pixelSize: theme.fontNormal
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    onClicked: root.activate(yearCell.index)
+
+                    TapHandler {
+                        acceptedButtons: Qt.RightButton
+                        onTapped: {
+                            rowMenu.selectorFilters =
+                                root.browseModel.childFilters(yearCell.index)
+                            rowMenu.subject = yearCell.title
+                            rowMenu.popup()
+                        }
+                    }
+                }
+
+                Keys.onReturnPressed: root.activate(columns.currentIndex)
+            }
+
             ListView {
                 id: list
                 anchors.fill: parent
-                visible: !root.gridMode
+                visible: !root.gridMode && !root.columnMode
                 model: visible ? root.browseModel : null
                 clip: true
                 cacheBuffer: theme.rowHeight * 20

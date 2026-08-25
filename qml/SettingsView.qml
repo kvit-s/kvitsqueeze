@@ -234,6 +234,25 @@ Item {
                 }
             }
 
+            // prd.md FR-2.8, and progress D11 — which is the part that has to
+            // be said out loud. A list of five quality names reads as "how
+            // good would you like your audio to be", so Off looks like the
+            // pure choice. It is not: in shared mode the device runs at one
+            // fixed rate, and a track at a different rate simply does not open.
+            // That failure is silent and looks exactly like playing. Balanced
+            // is the default for that reason and this says why.
+            Hint {
+                text: qsTr("The output device runs at one fixed rate in shared "
+                           + "mode. A track recorded at a different rate has to "
+                           + "be converted to it, or the device will not open at "
+                           + "all — the music appears to play, in silence. "
+                           + "Leave this on: conversion only happens when the "
+                           + "rates actually differ, and Balanced is inaudible "
+                           + "in practice. The higher settings spend more CPU on "
+                           + "the same job; Off is for a device you know accepts "
+                           + "every rate in your library.")
+            }
+
             CheckBox {
                 text: qsTr("Exclusive output (WASAPI)")
                 checked: app.settings.exclusiveOutput
@@ -265,13 +284,22 @@ Item {
                 }
             }
 
-            Hint {
-                visible: !app.engine.available
-                text: qsTr("No audio engine was found. KvitSqueeze plays through "
-                           + "squeezelite.exe, which is downloaded rather than "
-                           + "shipped. Run fetch-engine.ps1 from the installation "
-                           + "folder to put one in the engine folder next to the "
-                           + "application.")
+            // ── The audio engine itself (prd.md FR-2.11).
+            //
+            // Not a Hint saying "run a PowerShell script": that is what was
+            // here, and the first person to use this app never saw it, because
+            // nothing had sent them to this screen. The panel does the work
+            // now, and the banner and first-run dialog in Main.qml are what
+            // bring people to it.
+            SectionHeader {
+                visible: app.engine.installable
+                text: qsTr("Audio engine")
+            }
+
+            EngineSetup {
+                visible: app.engine.installable
+                showHeading: false
+                Layout.fillWidth: true
             }
 
             // ── Interface (prd.md §9.3, FR-7.1, FR-7.6)

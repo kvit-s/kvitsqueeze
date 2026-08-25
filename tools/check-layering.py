@@ -13,7 +13,8 @@ This script exists for the things that cannot express:
 
   * Three ownership rules are about what a module *does*, not what it
     includes:
-      - Only sqz-session may reach Qt's networking.
+      - Only sqz-session may reach Qt's networking, plus the two files listed
+        in NETWORK_EXEMPT — see the note there.
       - Only sqz-engine may start a child process.
       - Only sqz-session may supply a player id to a request (prd.md FR-6.1).
 
@@ -63,6 +64,26 @@ NETWORK_TYPES = re.compile(
     r"|TcpSocket|TcpServer|UdpSocket)\b"
 )
 NETWORK_OWNER = "session"
+
+# ── The one exception, and why it is a whitelist of two files rather than a
+# module.
+#
+# KvitSqueeze does not distribute squeezelite: it is GPLv3, and neither shipped
+# artifact carries it (THIRD-PARTY-NOTICES.md). Until FR-2.9 the only ways to
+# get one were the installer's download step and a PowerShell script, which
+# meant a portable user who did not read the README had a complete-looking app
+# that would not make a sound. EngineInstaller is the app doing it itself.
+#
+# What that costs is one outbound HTTPS request from sqz-engine. It is not an
+# LMS request, it carries no player id, and it cannot reach LmsSession — so the
+# reason for the rule ("every request goes through the one place that injects
+# the id") is intact, and prd.md N7 is untouched because N7 is about *listening*
+# endpoints. Named by file so that a second networked thing in sqz-engine is a
+# decision someone has to make here, not something that slips in.
+NETWORK_EXEMPT = {
+    "engine/engineinstaller.h",
+    "engine/engineinstaller.cpp",
+}
 
 # ── Child processes: sqz-engine only.
 #
@@ -131,6 +152,8 @@ def main():
                 continue
 
             relative = os.path.relpath(path, ROOT).replace(os.sep, "/")
+            within_src = os.path.relpath(path, SRC).replace(os.sep, "/")
+            network_exempt = within_src in NETWORK_EXEMPT
             with open(path, encoding="utf-8") as handle:
                 for number, line in enumerate(handle, 1):
                     match = INCLUDE.match(line)
@@ -143,7 +166,8 @@ def main():
                                 f"which belongs to {owner} — the graph does not allow it"
                             )
 
-                    if module != NETWORK_OWNER and NETWORK_TYPES.search(line):
+                    if (module != NETWORK_OWNER and not network_exempt
+                            and NETWORK_TYPES.search(line)):
                         violations.append(
                             f"{relative}:{number}: Qt networking outside sqz-{NETWORK_OWNER}"
                         )

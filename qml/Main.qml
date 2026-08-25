@@ -49,6 +49,63 @@ ApplicationWindow {
     Theme { id: theme }
     color: theme.surface
 
+    // ── The theme, handed to Qt Quick Controls.
+    //
+    // Every colour this app draws itself comes from Theme.qml, and until this
+    // block existed the controls it does *not* draw came from the Basic
+    // style's built-in palette instead — which is light, always. Most of it
+    // survived that: a Button and a TextField paint their own background, so
+    // they merely looked out of place in dark mode.
+    //
+    // A CheckBox does not. It draws an indicator and a label straight onto
+    // whatever is behind it, and its label is `palette.windowText` — black.
+    // On the dark surface those labels were invisible, which is how the first
+    // user of this app found them. The same was true of every CheckDelegate
+    // in the mix's genre list and every MenuItem in the queue menus.
+    //
+    // Set on the window so it propagates down the whole item tree, including
+    // popups parented to the overlay. Roles rather than controls: naming the
+    // one broken label here would have left the next control to be found by
+    // whoever hit it.
+    palette {
+        window:          theme.surface
+        windowText:      theme.textPrimary
+        base:            theme.surfaceRaised
+        alternateBase:   theme.surfaceOverlay
+        text:            theme.textPrimary
+        button:          theme.surfaceOverlay
+        buttonText:      theme.textPrimary
+        brightText:      theme.accentText
+        highlight:       theme.accent
+        highlightedText: theme.accentText
+        accent:          theme.accent
+        link:            theme.accent
+        placeholderText: theme.textFaint
+        toolTipBase:     theme.surfaceOverlay
+        toolTipText:     theme.textPrimary
+
+        // The Basic style's borders and pressed states. `mid` is the resting
+        // border, `midlight`/`light` are hover and pressed, `dark` is the
+        // groove a ScrollBar and a ProgressBar sit in.
+        mid:             theme.border
+        midlight:        theme.surfaceHover
+        light:           theme.surfaceHover
+        dark:            theme.textFaint
+        shadow:          "#000000"
+
+        // Disabled is a state, not a colour: without this group Qt keeps the
+        // enabled colours and only the control's own opacity says anything,
+        // which on a dark surface is not enough to read as "off".
+        disabled {
+            windowText:  theme.textFaint
+            text:        theme.textFaint
+            buttonText:  theme.textFaint
+            base:        theme.surface
+            button:      theme.surface
+            mid:         theme.border
+        }
+    }
+
     // ── Navigation. One stack, pushed onto by every drill-down; the rail
     // replaces the stack rather than adding to it, so "Albums" is always one
     // click from anywhere (prd.md §9.1).
@@ -92,7 +149,6 @@ ApplicationWindow {
         }
     }
 
-    Component.onCompleted: selectView(root.currentView)
 
     Connections {
         target: shell
@@ -153,6 +209,21 @@ ApplicationWindow {
     }
 
     MiniPlayer { id: miniPlayer; visible: false }
+
+    // ── prd.md FR-2.11: an app with no audio engine says so, once, on the way
+    // in — and keeps a way back to the fix afterwards (the banner below).
+    //
+    // Deferred to Component.onCompleted rather than shown from a binding: at
+    // construction the engine has not been asked yet, and a dialog that
+    // appears and then closes itself on a machine that *does* have an engine
+    // is worse than one that appears a frame late on a machine that does not.
+    EngineSetupDialog { id: engineSetup }
+
+    Component.onCompleted: {
+        selectView(root.currentView)
+        if (!app.engine.available && app.engine.installable)
+            engineSetup.open()
+    }
 
     // One instance at window level, so the bottom bar and the shortcut share
     // the same menu and the same "replace the queue?" question.
@@ -223,7 +294,12 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: app.connectionMessage ? theme.rowHeight : 0
-            visible: height > 0
+            // No `visible: height > 0`. A QQuickLayout skips invisible items
+            // entirely, so a banner whose visibility is derived from the
+            // height the layout is supposed to give it never gets one: it is
+            // invisible, therefore unsized, therefore invisible. A zero-height
+            // rectangle draws nothing anyway, and this way the height can
+            // animate in both directions.
             clip: true
             color: theme.warning
 
@@ -247,7 +323,55 @@ ApplicationWindow {
                 Button {
                     text: qsTr("Settings")
                     flat: true
+                    // On the warning ground, which is the same colour in both
+                    // themes — so this is fixed too, or a dark theme would put
+                    // near-white text on yellow.
+                    palette.buttonText: "#101216"
                     onClicked: root.selectView("settings")
+                }
+            }
+        }
+
+        // ── No audio engine (prd.md FR-2.11). Same shape as the connection
+        // banner above and for the same reason: it is a fact about why the app
+        // will not do the thing it is for, so it belongs where the user is,
+        // not on a settings screen they have no reason to open. It disappears
+        // by itself the moment an engine appears.
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: engineMissing ? theme.rowHeight : 0
+            // Same reason as the banner above.
+            clip: true
+            color: theme.warning
+
+            readonly property bool engineMissing:
+                !app.engine.available && app.engine.installable
+
+            Behavior on Layout.preferredHeight {
+                NumberAnimation { duration: theme.animation }
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: theme.margin
+                anchors.rightMargin: theme.margin
+                spacing: theme.spacing
+
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("No audio engine yet — nothing will play until one "
+                               + "is installed.")
+                    // The banner paints its own warning ground in both themes,
+                    // so the text on it is fixed rather than themed.
+                    color: "#101216"
+                    font.pixelSize: theme.fontSmall
+                    elide: Text.ElideRight
+                }
+                Button {
+                    text: qsTr("Set up playback")
+                    flat: true
+                    palette.buttonText: "#101216"   // see the banner above
+                    onClicked: engineSetup.open()
                 }
             }
         }

@@ -2,7 +2,12 @@
 
 #include "enginecontroller.h"
 
+#include "engineinstaller.h"
 #include "settings.h"
+
+#include <QDir>
+#include <QFileInfo>
+#include <QUrl>
 
 namespace {
 
@@ -52,7 +57,35 @@ EngineController::EngineController(IAudioEngine *engine, Settings *settings, QOb
     connect(m_engine, &IAudioEngine::logLine, this, &EngineController::logLine);
     connect(m_engine, &IAudioEngine::errorOccurred, this, [this] { Q_EMIT statusChanged(); });
 
+    // Asked here rather than left to the first apply(). `available` is what
+    // the first-run setup panel decides on, and it is read the moment the QML
+    // loads — so a controller that answers "no engine" until something else
+    // happens to call apply() puts a download dialog in front of a user who
+    // has an engine, for as long as it takes to close itself again. The real
+    // app calls begin() before loading the shell and would get away with it;
+    // that is a line order, not a guarantee.
+    m_available = m_engine->isAvailable();
+
     connect(m_settings, &Settings::engineChanged, this, &EngineController::apply);
+
+    // An engine appearing while the app runs is worth acting on rather than
+    // merely reporting: apply() relaunches from the Failed state, which is
+    // exactly the state a missing engine leaves behind. That is what makes
+    // "restart the app after the download" an instruction nobody needs
+    // (prd.md FR-2.11).
+    connect(m_engine, &IAudioEngine::availabilityChanged, this, [this] {
+        m_available = m_engine->isAvailable();
+        Q_EMIT statusChanged();
+        if (m_available) {
+            refreshDevices();
+            apply();
+        }
+    });
+
+    if (EngineInstaller *installer = m_engine->installer()) {
+        connect(installer, &EngineInstaller::changed,
+                this, &EngineController::installChanged);
+    }
 }
 
 QString EngineController::stateText() const
@@ -170,4 +203,91 @@ void EngineController::apply()
 void EngineController::refreshDevices()
 {
     m_engine->refreshDevices();
+}
+
+// ── Getting an engine in the first place (prd.md FR-2.11).
+//
+// Every one of these is a pass-through to the backend's installer, which is
+// null for a backend that needs nothing installed. That is the whole reason
+// they are written defensively rather than assuming one exists: prd.md §7.3
+// keeps two other backends specified but unbuilt, and neither would have one.
+
+bool EngineController::isInstallable() const
+{
+    return m_engine->installer() != nullptr;
+}
+
+bool EngineController::isInstalling() const
+{
+    const EngineInstaller *installer = m_engine->installer();
+    return installer && installer->isBusy();
+}
+
+int EngineController::installProgress() const
+{
+    const EngineInstaller *installer = m_engine->installer();
+    // prd.md FR-2.5's rule, and the reason this is not 0: a download with no
+    // announced length is at an unknown point, not at the start.
+    return installer ? installer->progress() : -1;
+}
+
+QString EngineController::installStatus() const
+{
+    const EngineInstaller *installer = m_engine->installer();
+    return installer ? installer->statusText() : QString();
+}
+
+QString EngineController::installError() const
+{
+    const EngineInstaller *installer = m_engine->installer();
+    return installer ? installer->lastError() : QString();
+}
+
+QString EngineController::installSourceUrl() const
+{
+    const EngineInstaller *installer = m_engine->installer();
+    return installer ? installer->sourceUrl() : QString();
+}
+
+QString EngineController::enginePath() const
+{
+    const EngineInstaller *installer = m_engine->installer();
+    if (!installer)
+        return {};
+    // Shown to a person, so it is spelled the way Windows spells it. The
+    // folder below is not: it goes into a file: URL, which wants the other
+    // slash.
+    return QDir::toNativeSeparators(installer->destination());
+}
+
+QString EngineController::engineFolder() const
+{
+    const EngineInstaller *installer = m_engine->installer();
+    const QString path = installer ? installer->destination() : QString();
+    return path.isEmpty() ? QString() : QFileInfo(path).absolutePath();
+}
+
+void EngineController::installEngine()
+{
+    if (EngineInstaller *installer = m_engine->installer())
+        installer->install();
+}
+
+void EngineController::cancelInstall()
+{
+    if (EngineInstaller *installer = m_engine->installer())
+        installer->cancel();
+}
+
+void EngineController::useExistingEngine(const QString &fileUrl)
+{
+    EngineInstaller *installer = m_engine->installer();
+    if (!installer)
+        return;
+
+    // A QML FileDialog hands over a file: URL; a path typed anywhere else does
+    // not. QUrl::isLocalFile() tells the two apart without guessing at colons,
+    // which a Windows drive letter has one of.
+    const QUrl url(fileUrl);
+    installer->installFrom(url.isLocalFile() ? url.toLocalFile() : fileUrl);
 }

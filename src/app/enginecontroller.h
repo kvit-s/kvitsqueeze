@@ -49,6 +49,27 @@ class EngineController : public QObject
 
     Q_PROPERTY(QStringList deviceNames READ deviceNames NOTIFY devicesChanged)
 
+    // ── Getting an engine in the first place (prd.md FR-2.11).
+    //
+    // KvitSqueeze does not ship squeezelite, so a portable user's first run is
+    // a complete-looking app that will not make a sound. That was reported by
+    // the first person to use it, and it is the whole reason this block
+    // exists: the app now offers the download rather than a README does.
+    //
+    // `installable` is false for a backend that needs nothing installed, and
+    // the whole panel goes with it.
+    Q_PROPERTY(bool installable READ isInstallable CONSTANT)
+    Q_PROPERTY(bool installing READ isInstalling NOTIFY installChanged)
+    Q_PROPERTY(int installProgress READ installProgress NOTIFY installChanged)
+    Q_PROPERTY(QString installStatus READ installStatus NOTIFY installChanged)
+    Q_PROPERTY(QString installError READ installError NOTIFY installChanged)
+    Q_PROPERTY(QString installSourceUrl READ installSourceUrl NOTIFY installChanged)
+
+    // Where the engine is looked for, and the folder holding it — the second
+    // for a panel that offers to open it in Explorer.
+    Q_PROPERTY(QString enginePath READ enginePath NOTIFY statusChanged)
+    Q_PROPERTY(QString engineFolder READ engineFolder NOTIFY statusChanged)
+
 public:
     EngineController(IAudioEngine *engine, Settings *settings, QObject *parent = nullptr);
 
@@ -81,9 +102,28 @@ public:
     Q_INVOKABLE void stop();
     Q_INVOKABLE void refreshDevices();
 
+    bool isInstallable() const;
+    bool isInstalling() const;
+    int installProgress() const;
+    QString installStatus() const;
+    QString installError() const;
+    QString installSourceUrl() const;
+    QString enginePath() const;
+    QString engineFolder() const;
+
+    // Fetch and install the engine. Answers on installChanged() throughout and
+    // on availability once it lands.
+    Q_INVOKABLE void installEngine();
+    Q_INVOKABLE void cancelInstall();
+
+    // Adopt a squeezelite.exe the user already has. Takes a file: URL because
+    // that is what a QML FileDialog hands over; a plain path works too.
+    Q_INVOKABLE void useExistingEngine(const QString &fileUrl);
+
 Q_SIGNALS:
     void statusChanged();
     void devicesChanged();
+    void installChanged();
     void logLine(const QString &line);
 
 private:
